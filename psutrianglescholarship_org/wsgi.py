@@ -1,5 +1,5 @@
 """
-WSGI config for triangle_scholarship_webapp project.
+WSGI config for psutrianglescholarship_org project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "triangle_scholarship_webapp.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "psutrianglescholarship_org.settings")
 
 application = get_wsgi_application()

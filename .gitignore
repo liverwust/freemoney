@@ -5,3 +5,11 @@
 /lib64
 /pip-selfcheck.json
 /pyvenv.cfg
+
+# Django project configuration environment (contains secrets!)
+/psutrianglescholarship_org/.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
