@@ -3,7 +3,17 @@ from django import forms
 
 class TestForm(forms.Form):
     your_name = forms.CharField(label='Your name', max_length=100)
+    your_int = forms.IntegerField()
 
 # Create your views here.
 def test(request):
-    return render(request, 'test.html', {'form': TestForm()})
+    log = logging.getLogger('django')
+    myint = 1
+    if 'myint' in request.session:
+        myint = request.session['myint']
+        request.session['myint'] += 1
+    else:
+        myint = 1
+        request.session['myint'] = myint
+    myform = TestForm(initial={'your_int': myint})
+    return render(request, 'test.html', {'form': myform})
