@@ -7,7 +7,7 @@
 /pyvenv.cfg
 
 # Django project configuration environment (contains secrets!)
-/psutrianglescholarship_org/.env
+/*/.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

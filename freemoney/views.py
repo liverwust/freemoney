@@ -7,7 +7,6 @@ class TestForm(forms.Form):
 
 # Create your views here.
 def test(request):
-    log = logging.getLogger('django')
     myint = 1
     if 'myint' in request.session:
         myint = request.session['myint']
