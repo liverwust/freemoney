@@ -1,18 +1,17 @@
+from django.forms import ModelForm
 from django.shortcuts import render
-from django import forms
+from freemoney.models import ApplicantResponse
 
-class TestForm(forms.Form):
-    your_name = forms.CharField(label='Your name', max_length=100)
-    your_int = forms.IntegerField()
+
+class ApplicantResponseForm(ModelForm):
+    class Meta:
+        model = ApplicantResponse
+        fields = ['name', 'address', 'phone', 'psu_email', 'preferred_email',
+                  'psu_id', 'semester_initiated', 'semester_graduating',
+                  'cumulative_gpa', 'semester_gpa', 'in_state_tuition']
+
 
 # Create your views here.
 def test(request):
-    myint = 1
-    if 'myint' in request.session:
-        myint = request.session['myint']
-        request.session['myint'] += 1
-    else:
-        myint = 1
-        request.session['myint'] = myint
-    myform = TestForm(initial={'your_int': myint})
+    myform = ApplicantResponseForm()
     return render(request, 'test.html', {'form': myform})
