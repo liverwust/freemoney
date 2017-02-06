@@ -3,6 +3,7 @@ import decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import (MinValueValidator,
                                     MaxValueValidator,
+                                    MinLengthValidator,
                                     RegexValidator)
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
@@ -57,33 +58,76 @@ class ApplicantResponse(models.Model):
     """An applicant's entire response, including dynamic elements."""
 
     # Administrative
-    created_timestamp = models.DateTimeField()
-    due_timestamp = models.DateTimeField()
-    semester_for = SemesterField()
+    submitted = models.BooleanField(default=False)
+    #created_timestamp = models.DateTimeField()
+    #due_timestamp = models.DateTimeField()
+    #semester_for = SemesterField()
 
-    # Actual response elements
-    name = models.CharField(max_length=255)
-    address = models.TextField()
-    phone = PhoneNumberField()
-    psu_email = models.EmailField()
+    # Actual response elements (no per-field validation)
+    name = models.CharField(max_length=255, blank=True)
+    address = models.TextField(blank=True)
+    phone = PhoneNumberField(blank=True)
+    psu_email = models.EmailField(blank=True)
     preferred_email = models.EmailField(blank=True)
-    psu_id = models.CharField(
-            max_length=9,
-            validators=[RegexValidator(regex=r'^9\d{8}$')]
-    )
-    semester_initiated = SemesterField()
-    semester_graduating = SemesterField()
-    cumulative_gpa = models.DecimalField(
-            max_digits=3,
-            decimal_places=2,
-            validators=[MinValueValidator('0.00'), MaxValueValidator('4.00')]
-    )
-    semester_gpa = models.DecimalField(
-            max_digits=3,
-            decimal_places=2,
-            validators=[MinValueValidator('0.00'), MaxValueValidator('4.00')]
-    )
-    in_state_tuition = models.BooleanField()
+    psu_id = models.CharField(max_length=9, blank=True)
+    semester_initiated = SemesterField(null=True)
+    semester_graduating = SemesterField(null=True)
+    cumulative_gpa = models.DecimalField(max_digits=3,
+                                         decimal_places=2,
+                                         null=True)
+    semester_gpa = models.DecimalField(max_digits=3,
+                                       decimal_places=2,
+                                       null=True)
+    in_state_tuition = models.NullBooleanField()
+
+    def soft_validate(self):
+        """Perform "soft" validation, as opposed to DB-level validation.
+
+        An ApplicantResponse can either be submitted, in which case all of its
+        fields should be valid according to the rules defined below, or
+        unsubmitted, in which case most of its fields can be blank.
+
+        For the purpose of indicating progress, it is useful to know which
+        fields are invalid even when not saving data to the DB.
+        """
+
+        def do(field_name, validators):
+            value = getattr(self, field_name)
+            error_dict = {field_name: []}
+            if isinstance(validators, list):
+                validator_list = validators
+            else:
+                validator_list = [validators]
+            for validator in validator_list:
+                try:
+                    validator(value)
+                except ValidationError as e:
+                    error_dict[field_name].append(str(e))
+            if len(error_dict[field_name]) > 0:
+                raise ValidationError(error_dict)
+
+        def not_null(message):
+            def not_null_validator(value):
+                if value == None:
+                    raise ValidationError(message)
+            return not_null_validator
+
+        do('name', [MinLengthValidator(1, 'name cannot be blank')])
+        do('address', [MinLengthValidator(1, 'address cannot be blank')])
+        do('phone', [MinLengthValidator(1, 'phone number cannot be blank')])
+        do('psu_email', [MinLengthValidator(1, 'PSU email is required')])
+        do('psu_id', [RegexValidator(r'^9\d{8}$', 'PSU ID: 9xxxxxxxx')])
+        do('semester_initiated', [not_null('initiation semester required')])
+        do('semester_graduating', [not_null('graduation semester required')])
+        do('cumulative_gpa', [MinValueValidator('0.00'),
+                              MaxValueValidator('4.00')])
+        do('semester_gpa', [MinValueValidator('0.00'),
+                            MaxValueValidator('4.00')])
+        do('in_state_tuition', [not_null('must select in/out state tuition')])
+
+    def clean(self):
+        if self.submitted:
+            self.soft_validate()
 
 
 class FinancialAidRecord(models.Model):
