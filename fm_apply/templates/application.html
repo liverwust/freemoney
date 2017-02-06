@@ -26,14 +26,14 @@
     {% bootstrap_messages %}
 
     <ul class="nav nav-pills">
-      {% for nav_elem in nav_list %}
-        {% if nav_elem.is_active %}
+      {% for step in STEPS %}
+        {% if current_step == step %}
           <li role="presentation" class="active">
-            <a href="#">{{ nav_elem.name }}</a>
+            <a href="#">{{ step.full_name }}</a>
           </li>
         {% else %}
           <li role="presentation">
-            <a href="#">{{ nav_elem.name }}</a>
+            <a href="#">{{ step.full_name }}</a>
           </li>
         {% endif %}
       {% endfor %}

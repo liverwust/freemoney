@@ -1,0 +1,21 @@
+[
+  {
+    "model": "fm_apply.ScholarshipAward",
+    "fields": {
+      "permanent_id": "test_scholarship_1",
+      "name": "Test Scholarship 1",
+      "description": "Lots of money for testers!",
+      "created_timestamp": "2017-01-01 01:01:01"
+    }
+  },
+  {
+    "model": "fm_apply.ScholarshipAward",
+    "fields": {
+      "permanent_id": "awesome_o",
+      "name": "Awesome-O Scholarship",
+      "description": "Brought to you by the fine folks at Awesome-O Inc.",
+      "created_timestamp": "2017-01-01 01:01:01"
+    }
+  }
+]
+

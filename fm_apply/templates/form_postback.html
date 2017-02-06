@@ -1,0 +1,12 @@
+{% extends "application.html" %}
+{% load bootstrap3 %}
+{% load fm_apply_custom_tags %}
+
+{% block content %}
+<form action="{{ postback }}" method="post" class="form">
+  {% csrf_token %}
+  {% bootstrap_form form %}
+  {% fm_navigation_buttons %}
+
+</form>
+{% endblock %}

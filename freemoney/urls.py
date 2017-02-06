@@ -19,6 +19,7 @@ from django.contrib import admin
 import fm_apply.views
 
 urlpatterns = [
-    url(r'^$', fm_apply.views.default),
+    url(r'^$', fm_apply.views.index),
+    url(r'^steps/(\S+)$', fm_apply.views.static_wizard),
     url(r'^admin/', admin.site.urls),
 ]
