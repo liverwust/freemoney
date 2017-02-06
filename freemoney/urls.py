@@ -19,6 +19,6 @@ from django.contrib import admin
 import fm_apply.views
 
 urlpatterns = [
-    url(r'^test/', fm_apply.views.test),
+    url(r'^$', fm_apply.views.default),
     url(r'^admin/', admin.site.urls),
 ]
