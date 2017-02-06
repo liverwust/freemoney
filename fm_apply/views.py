@@ -1,19 +1,20 @@
 from collections import namedtuple
-from django.forms import Form, ModelForm
+from django import forms
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_safe, require_http_methods
-from fm_apply.models import ApplicantResponse
+from fm_apply.models import ApplicantResponse, ScholarshipAward
 
 
-class _AwardSelectionForm(ModelForm):
+class _AwardSelectionForm(forms.Form):
     """Form used to select one or more awards to apply for."""
 
-    class Meta:
-        model = ApplicantResponse
-        fields = []
+    award_selections = forms.ModelMultipleChoiceField(
+            queryset=ScholarshipAward.objects.all(),
+            widget=forms.CheckboxSelectMultiple
+    )
 
 
-class _PeerFeedbackForm(ModelForm):
+class _PeerFeedbackForm(forms.ModelForm):
     """Form used to provide (mandatory) feedback for several brothers."""
 
     class Meta:
@@ -21,7 +22,7 @@ class _PeerFeedbackForm(ModelForm):
         fields = []
 
 
-class _BasicInformationForm(ModelForm):
+class _BasicInformationForm(forms.ModelForm):
     """Form used to provide basic contact and other information."""
 
     class Meta:
