@@ -8,6 +8,7 @@
     <title>Bootstrap 101 Template</title>
 
     {% load bootstrap3 %}
+    {% load fm_apply_custom_tags %}
     {# Load CSS and JavaScript #}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
@@ -39,8 +40,12 @@
       {% endfor %}
     </ul>
 
-    {% block content %}
-    {% endblock %}
+    <form action="{{ postback }}" method="post" class="form">
+      {% csrf_token %}
+      {% block content %}
+      {% endblock %}
+      {% fm_navigation_buttons %}
+    </form>
 
   </body>
 </html>
