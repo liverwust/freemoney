@@ -1,6 +1,6 @@
 from django.forms import ModelForm
 from django.shortcuts import render
-from freemoney.models import ApplicantResponse
+from fm_apply.models import ApplicantResponse
 
 
 class ApplicantResponseForm(ModelForm):

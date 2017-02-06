@@ -16,9 +16,9 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
-import freemoney.views
+import fm_apply.views
 
 urlpatterns = [
-    url(r'^test/', freemoney.views.test),
+    url(r'^test/', fm_apply.views.test),
     url(r'^admin/', admin.site.urls),
 ]

@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'bootstrap3',
     'phonenumber_field',
     'freemoney',
+    'fm_apply',
 ]
 
 MIDDLEWARE = [
