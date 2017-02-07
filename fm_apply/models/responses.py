@@ -1,0 +1,189 @@
+import datetime
+import decimal
+from django.contrib import auth
+from django.core.exceptions import ValidationError
+from django.core.validators import (MinValueValidator,
+                                    MaxValueValidator,
+                                    MinLengthValidator,
+                                    RegexValidator)
+from django.db import models
+from fm_apply.utils import Semester
+from phonenumber_field.modelfields import PhoneNumberField
+
+
+class ApplicantResponse(models.Model):
+    """An applicant's entire response."""
+
+    # Administrative
+    submitted = models.BooleanField(default=False)
+    applicant = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    due_at = models.DateTimeField()
+
+    # Actual response elements (see the clean method for further validations)
+    name = models.CharField(
+            'full name',
+            max_length=255,
+            blank=True
+    )
+    address = models.TextField(
+            'permanent mailing address',
+            blank=True
+    )
+    phone = PhoneNumberField(
+            'primary phone number',
+            help_text='Cell phone is acceptable',
+            blank=True
+    )
+    psu_email = models.EmailField(
+            'university e-mail address',
+            help_text='This is your psu.edu e-mail',
+            blank=True,
+            validators=[RegexValidator(r'^(?:[^@]+@psu.edu)?$')]
+    )
+    preferred_email = models.EmailField(
+            'preferred e-mail address',
+            blank=True
+    )
+    psu_id = models.CharField(
+            'university ID number',
+            help_text='Nine digits: 9xxxxxxxx',
+            max_length=9,
+            blank=True,
+            validators=[RegexValidator(r'^(?:9\d{8})?$')]
+    )
+    date_initiated = models.DateField(
+            'date of initiation',
+            null=True,
+            blank=True
+    )
+    date_graduating = models.DateField(
+            'planned graduation date',
+            null=True,
+            blank=True
+    )
+    cumulative_gpa = models.DecimalField(
+            'cumulative GPA',
+            max_digits=3,
+            decimal_places=2,
+            null=True,
+            blank=True
+    )
+    semester_gpa = models.DecimalField(
+            'last semester GPA',
+            max_digits=3,
+            decimal_places=2,
+            null=True,
+            blank=True
+    )
+    in_state_tuition = models.NullBooleanField(
+            'in-state tuition',
+            help_text='Do you pay the reduced tuition rate for PA residents?',
+            blank=True
+    )
+
+    def save(self, *args, **kwargs):
+        """Update timestamps on save."""
+        if self.created_at == None:
+            self.created_at = datetime.datetime.now(datetime.timezone.utc)
+        self.updated_at = datetime.datetime.now(datetime.timezone.utc)
+        super(ApplicantResponse, self).save(*args, **kwargs)
+
+    def clean(self, force=False):
+        """Perform checks which only apply to a submitted form.
+
+        An ApplicantResponse can either be submitted, in which case all of its
+        fields should be valid according to the rules defined below, or
+        unsubmitted, in which case many of its fields can be blank.
+
+        Specify force=True to apply these checks regardless of submission
+        state (intended for providing immediate feedback to users).
+        """
+
+        errors = {}
+        if self.submitted or force:
+            if self.name == '':
+                errors['name'] = ('name cannot be left blank',
+                                  'required')
+            if self.address == '':
+                errors['address'] = ('address cannot be left blank',
+                                     'required')
+            if self.phone == '':
+                errors['phone'] = ('phone number cannot be left blank',
+                                   'required')
+            if self.psu_email == '':
+                errors['psu_email'] = ('PSU email cannot be left blank',
+                                       'required')
+            if self.psu_id == '':
+                errors['psu_id'] = ('PSU ID cannot be left blank',
+                                    'required')
+            if self.date_initiated == None:
+                errors['date_initiated'] = ('initiation date is required',
+                                            'required')
+            elif Semester(self.date_initiated) > Semester(self.due_at):
+                errors['date_initiated'] = ('initiated date in the future',
+                                            'invalid')
+            if self.date_graduating == None:
+                errors['date_graduating'] = ('est. graduation date is required',
+                                            'required')
+            elif Semester(self.date_graduating) < Semester(self.due_at):
+                errors['date_graduating'] = ('graduation date in the past',
+                                             'invalid')
+            if self.cumulative_gpa == None:
+                errors['cumulative_gpa'] = ('cumulative GPA is required',
+                                            'required')
+            elif (self.cumulative_gpa < decimal.Decimal('0.00') or
+                  self.cumulative_gpa > decimal.Decimal('4.00')):
+                errors['cumulative_gpa'] = ('cumulative GPA too high/low',
+                                            'invalid')
+            if self.semester_gpa == None:
+                errors['semester_gpa'] = ('semester GPA is required',
+                                            'required')
+            elif (self.semester_gpa < decimal.Decimal('0.00') or
+                  self.semester_gpa > decimal.Decimal('4.00')):
+                errors['semester_gpa'] = ('semester GPA too high/low',
+                                            'invalid')
+            if self.in_state_tuition == None:
+                errors['in_state_tuition'] = ('select in/out state tuition',
+                                              'required')
+
+        for field in errors.keys():
+            errors[field] = ValidationError(errors[field][0],
+                                            code=errors[field][1])
+        if len(errors) > 0:
+            raise ValidationError(errors)
+
+
+class AdditionalRemarksResponse(models.Model):
+    """Represents additional info provided by the applicant.
+
+    There are a few text fields where an applicant can enter additional
+    remarks. They are all optional and somewhat "out-of-band," so they are
+    stored here rather than directly in the ApplicantResponse.
+    """
+
+    response = models.ForeignKey(ApplicantResponse, on_delete=models.CASCADE)
+    remark_type = models.SlugField()
+    remark_content = models.TextField('additional remarks')
+
+
+class EssayResponse(models.Model):
+    """An ApplicantResponse record containing an essay."""
+
+    response = models.ForeignKey(ApplicantResponse, on_delete=models.CASCADE)
+    prompt = models.ForeignKey('EssayPrompt', on_delete=models.CASCADE)
+    text = models.TextField()
+
+
+class PeerFeedbackResponse(models.Model):
+    """Represents an applicant's feedback regarding another brother."""
+
+    # peer_name is required and peer_user is optional, in case we are
+    # referring to a brother without an account
+    peer_name = models.CharField(max_length=255)
+    peer_user = models.ForeignKey(auth.models.User,
+                                  null=True,
+                                  blank=True,
+                                  on_delete=models.SET_NULL)
+    feedback = models.TextField()

@@ -112,6 +112,13 @@ USE_L10N = True
 USE_TZ = True
 
 
+# Phone number configuration
+# https://github.com/stefanfoulis/django-phonenumber-field/
+
+PHONENUMBER_DB_FORMAT = 'NATIONAL'
+PHONENUMBER_DEFAULT_REGION = 'US'
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 

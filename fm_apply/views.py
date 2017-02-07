@@ -1,110 +1,119 @@
+import abc
 from collections import namedtuple
 from django import forms
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_safe, require_http_methods
-from fm_apply.models import ApplicantResponse, ScholarshipAward
+from fm_apply.models import ApplicantResponse, ScholarshipAwardPrompt
+import logging
 
 
-class _AwardSelectionForm(forms.Form):
-    """Form used to select one or more awards to apply for."""
+class BaseWizardView(abc.ABC):
+    """Base class providing generic services to wizard views."""
 
-    award_selections = forms.ModelMultipleChoiceField(
-            queryset=ScholarshipAward.objects.all(),
-            widget=forms.CheckboxSelectMultiple
-    )
+    def __call__(self, request, *args, **kwargs):
+        self.request = request
+        self.index = None
+        self.step = None
+        self.application = None
+        self.buttons = []
+        for index, step in enumerate(STEPS):
+            if isinstance(self, step.view_class):
+                self.index = index
+                self.step = step
+                break
+        if 'app_id' in request.session:
+            self.application = ApplicantResponse.objects.get(
+                    pk=request.session['app_id']
+            )
+        if request.method == 'GET' or request.method == 'HEAD':
+            self.context = {'STEPS': STEPS,
+                            'postback': request.path,
+                            'current_index': self.index,
+                            'current_step': self.step,
+                            'application': self.application}
+            self.handle_get()
+            self.context['buttons'] = self.buttons
+            return render(request,
+                          '{}.html'.format(self.step.short_identifier),
+                          context=self.context)
+        elif request.method == 'POST':
+            postdata = dict(request.POST)
+            logging.getLogger('django').info(str(postdata))
+            if 'submit-type' in postdata:
+                new_index = None
+                if postdata['submit-type'][0] == 'Start':
+                    if self.index == 0:
+                        new_index = 1
+                elif postdata['submit-type'][0] == 'Cancel':
+                    new_index = 0
+                elif postdata['submit-type'][0] == 'Previous':
+                    if self.index > 1:
+                        new_index = self.index - 1
+                elif postdata['submit-type'][0] == 'Next':
+                    if (self.index + 1) < len(STEPS):
+                        new_index = self.index + 1
+                elif postdata['submit-type'][0] == 'Submit':
+                    if (self.index + 1) == len(STEPS):
+                        del(request.session['app_id'])
+                        return HttpResponse('success!')
+                del(postdata['submit-type'])
+            self.handle_post(postdata)
+            # TODO: get reverse routing lookup working
+            if new_index == None:
+                return redirect('/steps/'+self.step.short_identifier)
+            else:
+                return redirect('/steps/' + STEPS[new_index].short_identifier)
+            return redirect(next_view)
+        else:
+            raise ValueError('bad HTTP method')
+
+    @abc.abstractmethod
+    def handle_get(self):
+        pass
+
+    @abc.abstractmethod
+    def handle_post(self, postdata):
+        pass
 
 
-class _PeerFeedbackForm(forms.ModelForm):
-    """Form used to provide (mandatory) feedback for several brothers."""
+class WelcomeWizardView(BaseWizardView):
+    def handle_get(self):
+        self.buttons = ['Start']
 
-    class Meta:
-        model = ApplicantResponse
-        fields = []
+    def handle_post(self, postdata):
+        pass
 
 
-class _BasicInformationForm(forms.ModelForm):
-    """Form used to provide basic contact and other information."""
+class AwardSelectionWizardView(BaseWizardView):
+    class AwardSelectionForm(forms.Form):
+        award_selections = forms.ModelMultipleChoiceField(
+                queryset=ScholarshipAwardPrompt.objects.all()
+        )
 
-    class Meta:
-        model = ApplicantResponse
-        fields = []
+    def handle_get(self):
+        form = AwardSelectionWizardView.AwardSelectionForm()
+        form.award_selections = self.application.scholarshipaward_set
+        self.context['form'] = form
+
+    def handle_post(self, postdata):
+        form = AwardSelectionWizardView.AwardSelectionForm(postdata)
+        self.application.scholarshipaward_set = form.award_selections
 
 
 StepDescription = namedtuple('StepDescription', [
         'short_identifier',
         'full_name',
-        'form_class',
+        'view_class',
 ])
 STEPS = [StepDescription(short_identifier='welcome',
                          full_name='Welcome',
-                         form_class=None),
+                         view_class=WelcomeWizardView),
          StepDescription(short_identifier='awards',
                          full_name='Award Selection',
-                         form_class=_AwardSelectionForm),
-         StepDescription(short_identifier='feedback',
-                         full_name='Peer Feedback',
-                         form_class=_PeerFeedbackForm),
-         StepDescription(short_identifier='basicinfo',
-                         full_name='Basic Information',
-                         form_class=_BasicInformationForm)]
-
+                         view_class=AwardSelectionWizardView)]
 
 
 @require_safe
 def index(request):
-    return redirect(static_wizard, 'welcome', permanent=True)
-
-
-@require_http_methods(['GET', 'POST', 'HEAD'])
-def static_wizard(request, current_step_identifier):
-    context = {'STEPS': STEPS,
-               'postback': request.path,
-               'current_index': None,
-               'current_step': None,
-               'application': None}
-    for index, step in enumerate(STEPS):
-        if step.short_identifier == current_step_identifier:
-            context['current_index'] = index
-            context['current_step'] = step
-            break
-    if (context['current_index'] == None or
-        context['current_step'] == None):
-        raise ValueError('invalid step identifier')
-    if 'app_id' in request.session:
-        context['application'] = ApplicantResponse.objects.get(
-                pk=request.session['app_id']
-        )
-
-    if request.method == 'POST':
-        if context['application'] == None:
-            return redirect(static_wizard, 'welcome')
-        new_index = context['current_index']
-        if request.POST['submit-type'] == 'Start':
-            if new_index == 0:
-                new_index = 1
-        elif request.POST['submit-type'] == 'Cancel':
-            new_index = 0
-        elif request.POST['submit-type'] == 'Previous':
-            if new_index > 1:
-                new_index -= 1
-        elif request.POST['submit-type'] == 'Next':
-            if (new_index + 1) < len(STEPS):
-                new_index += 1
-        elif request.POST['submit-type'] == 'Submit':
-            if (new_index + 1) == len(STEPS):
-                raise Exception('done-zo')
-        return redirect(static_wizard, STEPS[new_index].short_identifier)
-
-    else:
-        if context['current_step'].short_identifier == 'welcome':
-            if context['application'] is None:
-                context['application'] = ApplicantResponse.objects.create()
-                request.session['app_id'] = context['application'].id
-            return render(request,
-                          template_name='welcome.html',
-                          context=context)
-        else:
-            context['form'] = context['current_step'].form_class()
-            return render(request,
-                        template_name='form_postback.html',
-                        context=context)
+    return redirect(STEPS[0].view_class(), permanent=True)

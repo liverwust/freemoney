@@ -15,11 +15,10 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-
 import fm_apply.views
 
-urlpatterns = [
-    url(r'^$', fm_apply.views.index),
-    url(r'^steps/(\S+)$', fm_apply.views.static_wizard),
-    url(r'^admin/', admin.site.urls),
-]
+urlpatterns = [url(r'^$', fm_apply.views.index)]
+for step in fm_apply.views.STEPS:
+    urlpatterns.append(url(r'^steps/' + step.short_identifier,
+                           step.view_class()))
+urlpatterns.append(url(r'^admin/', admin.site.urls))

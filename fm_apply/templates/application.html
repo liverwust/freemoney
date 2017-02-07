@@ -44,7 +44,24 @@
       {% csrf_token %}
       {% block content %}
       {% endblock %}
-      {% fm_navigation_buttons %}
+
+      <div class="btn-group" role="group">
+      {% if "Start" in buttons %}
+        {% bootstrap_button "Start" button_type="submit" button_class="btn-success" name="submit-type" value="Start" %}
+      {% endif %}
+      {% if "Cancel" in buttons %}
+        {% bootstrap_button "Cancel" button_type="submit" button_class="btn-danger" name="submit-type" value="Cancel" %}
+      {% endif %}
+      {% if "Previous" in buttons %}
+        {% bootstrap_button "Previous" button_type="submit" button_class="btn-default" name="submit-type" value="Previous" %}
+      {% endif %}
+      {% if "Next" in buttons %}
+        {% bootstrap_button "Next" button_type="submit" button_class="btn-default" name="submit-type" value="Next" %}
+      {% endif %}
+      {% if "Submit" in buttons %}
+        {% bootstrap_button "Submit" button_type="submit" button_class="btn-success" name="submit-type" value="Submit" %}
+      {% endif %}
+      </div>
     </form>
 
   </body>
