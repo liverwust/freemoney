@@ -49,6 +49,7 @@ STEPS = [StepDescription(short_identifier='welcome',
                          form_class=_BasicInformationForm)]
 
 
+
 @require_safe
 def index(request):
     return redirect(static_wizard, 'welcome', permanent=True)
@@ -59,7 +60,8 @@ def static_wizard(request, current_step_identifier):
     context = {'STEPS': STEPS,
                'postback': request.path,
                'current_index': None,
-               'current_step': None}
+               'current_step': None,
+               'application': None}
     for index, step in enumerate(STEPS):
         if step.short_identifier == current_step_identifier:
             context['current_index'] = index
@@ -68,8 +70,14 @@ def static_wizard(request, current_step_identifier):
     if (context['current_index'] == None or
         context['current_step'] == None):
         raise ValueError('invalid step identifier')
+    if 'app_id' in request.session:
+        context['application'] = ApplicantResponse.objects.get(
+                pk=request.session['app_id']
+        )
 
     if request.method == 'POST':
+        if context['application'] == None:
+            return redirect(static_wizard, 'welcome')
         new_index = context['current_index']
         if request.POST['submit-type'] == 'Start':
             if new_index == 0:
@@ -89,6 +97,9 @@ def static_wizard(request, current_step_identifier):
 
     else:
         if context['current_step'].short_identifier == 'welcome':
+            if context['application'] is None:
+                context['application'] = ApplicantResponse.objects.create()
+                request.session['app_id'] = context['application'].id
             return render(request,
                           template_name='welcome.html',
                           context=context)
