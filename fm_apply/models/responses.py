@@ -1,5 +1,6 @@
 import datetime
 import decimal
+from django.conf import settings
 from django.contrib import auth
 from django.core.exceptions import ValidationError
 from django.core.validators import (MinValueValidator,
@@ -16,7 +17,8 @@ class ApplicantResponse(models.Model):
 
     # Administrative
     submitted = models.BooleanField(default=False)
-    applicant = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
+    #TODO: fully integrate User
+    #applicant = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
     due_at = models.DateTimeField()
@@ -82,6 +84,9 @@ class ApplicantResponse(models.Model):
             help_text='Do you pay the reduced tuition rate for PA residents?',
             blank=True
     )
+    #TODO: revive User
+    #reviewedpeer_set = models.ManyToManyField(auth.models.User,
+    #                                          through='PeerFeedbackResponse')
 
     def save(self, *args, **kwargs):
         """Update timestamps on save."""
@@ -90,63 +95,109 @@ class ApplicantResponse(models.Model):
         self.updated_at = datetime.datetime.now(datetime.timezone.utc)
         super(ApplicantResponse, self).save(*args, **kwargs)
 
-    def clean(self, force=False):
-        """Perform checks which only apply to a submitted form.
+    def full_clean(self, force=False, *args, **kwargs):
+        """Validate model fields, self-consistency, and uniqueness.
+
+        Pass force=True to pretend that the response has been submitted for
+        review, for the purposes of testing intermediate validity. See the
+        clean() method docstring for the significance of this.
+        """
+
+        if force:
+            original_status = self.submitted
+            self.submitted = True
+            super(ApplicantResponse, self).full_clean(*args, **kwargs)
+            self.submitted = original_status
+        else:
+            super(ApplicantResponse, self).full_clean(*args, **kwargs)
+
+    def clean(self):
+        """Custom validation for an ApplicantResponse.
 
         An ApplicantResponse can either be submitted, in which case all of its
         fields should be valid according to the rules defined below, or
         unsubmitted, in which case many of its fields can be blank.
-
-        Specify force=True to apply these checks regardless of submission
-        state (intended for providing immediate feedback to users).
         """
 
+        error_dict = {}
+        if self.submitted:
+            try:
+                self._deferred_clean_fields()
+            except ValidationError as exc:
+                error_dict = exc.error_dict
+
+            if len(self.scholarshipawardprompt_set.all()) < 1:
+                key = 'scholarshipawardprompt_set'
+                message = 'need to select at least one scholarship award'
+                error_dict[key] = ValidationError(message, code='invalid')
+
+#TODO: revive User
+#            if (len(self.peerfeedbackresponse_set.all()) <
+#                settings.MIN_PEERFEEDBACK):
+#                key = 'peerfeedbackresponse_set'
+#                message = 'need at least {} peer feedbacks'.format(
+#                        settings.MIN_PEERFEEDBACK
+#                )
+#                error_dict[key] = ValidationError(message, code='invalid')
+        if error_dict != {}:
+            raise ValidationError(error_dict)
+
+    def _deferred_clean_fields(self):
         errors = {}
-        if self.submitted or force:
-            if self.name == '':
-                errors['name'] = ('name cannot be left blank',
-                                  'required')
-            if self.address == '':
-                errors['address'] = ('address cannot be left blank',
-                                     'required')
-            if self.phone == '':
-                errors['phone'] = ('phone number cannot be left blank',
-                                   'required')
-            if self.psu_email == '':
-                errors['psu_email'] = ('PSU email cannot be left blank',
-                                       'required')
-            if self.psu_id == '':
-                errors['psu_id'] = ('PSU ID cannot be left blank',
+
+        if self.name == '':
+            errors['name'] = ('name cannot be left blank',
+                                'required')
+
+        if self.address == '':
+            errors['address'] = ('address cannot be left blank',
                                     'required')
-            if self.date_initiated == None:
-                errors['date_initiated'] = ('initiation date is required',
-                                            'required')
-            elif Semester(self.date_initiated) > Semester(self.due_at):
-                errors['date_initiated'] = ('initiated date in the future',
+
+        if self.phone == '':
+            errors['phone'] = ('phone number cannot be left blank',
+                                'required')
+
+        if self.psu_email == '':
+            errors['psu_email'] = ('PSU email cannot be left blank',
+                                    'required')
+
+        if self.psu_id == '':
+            errors['psu_id'] = ('PSU ID cannot be left blank',
+                                'required')
+
+        if self.date_initiated == None:
+            errors['date_initiated'] = ('initiation date is required',
+                                        'required')
+        elif Semester(self.date_initiated) > Semester(self.due_at):
+            errors['date_initiated'] = ('initiated date in the future',
+                                        'invalid')
+
+        if self.date_graduating == None:
+            errors['date_graduating'] = ('est. graduation date is required',
+                                        'required')
+        elif Semester(self.date_graduating) < Semester(self.due_at):
+            errors['date_graduating'] = ('graduation date in the past',
                                             'invalid')
-            if self.date_graduating == None:
-                errors['date_graduating'] = ('est. graduation date is required',
+
+        if self.cumulative_gpa == None:
+            errors['cumulative_gpa'] = ('cumulative GPA is required',
+                                        'required')
+        elif (self.cumulative_gpa < decimal.Decimal('0.00') or
+                self.cumulative_gpa > decimal.Decimal('4.00')):
+            errors['cumulative_gpa'] = ('cumulative GPA too high/low',
+                                        'invalid')
+
+        if self.semester_gpa == None:
+            errors['semester_gpa'] = ('semester GPA is required',
+                                        'required')
+        elif (self.semester_gpa < decimal.Decimal('0.00') or
+                self.semester_gpa > decimal.Decimal('4.00')):
+            errors['semester_gpa'] = ('semester GPA too high/low',
+                                        'invalid')
+
+        if self.in_state_tuition == None:
+            errors['in_state_tuition'] = ('select in/out state tuition',
                                             'required')
-            elif Semester(self.date_graduating) < Semester(self.due_at):
-                errors['date_graduating'] = ('graduation date in the past',
-                                             'invalid')
-            if self.cumulative_gpa == None:
-                errors['cumulative_gpa'] = ('cumulative GPA is required',
-                                            'required')
-            elif (self.cumulative_gpa < decimal.Decimal('0.00') or
-                  self.cumulative_gpa > decimal.Decimal('4.00')):
-                errors['cumulative_gpa'] = ('cumulative GPA too high/low',
-                                            'invalid')
-            if self.semester_gpa == None:
-                errors['semester_gpa'] = ('semester GPA is required',
-                                            'required')
-            elif (self.semester_gpa < decimal.Decimal('0.00') or
-                  self.semester_gpa > decimal.Decimal('4.00')):
-                errors['semester_gpa'] = ('semester GPA too high/low',
-                                            'invalid')
-            if self.in_state_tuition == None:
-                errors['in_state_tuition'] = ('select in/out state tuition',
-                                              'required')
 
         for field in errors.keys():
             errors[field] = ValidationError(errors[field][0],
@@ -163,7 +214,8 @@ class AdditionalRemarksResponse(models.Model):
     stored here rather than directly in the ApplicantResponse.
     """
 
-    response = models.ForeignKey(ApplicantResponse, on_delete=models.CASCADE)
+    full_response = models.ForeignKey(ApplicantResponse,
+                                      on_delete=models.CASCADE)
     remark_type = models.SlugField()
     remark_content = models.TextField('additional remarks')
 
@@ -171,19 +223,17 @@ class AdditionalRemarksResponse(models.Model):
 class EssayResponse(models.Model):
     """An ApplicantResponse record containing an essay."""
 
-    response = models.ForeignKey(ApplicantResponse, on_delete=models.CASCADE)
+    full_response = models.ForeignKey(ApplicantResponse,
+                                      on_delete=models.CASCADE)
     prompt = models.ForeignKey('EssayPrompt', on_delete=models.CASCADE)
     text = models.TextField()
 
 
-class PeerFeedbackResponse(models.Model):
-    """Represents an applicant's feedback regarding another brother."""
-
-    # peer_name is required and peer_user is optional, in case we are
-    # referring to a brother without an account
-    peer_name = models.CharField(max_length=255)
-    peer_user = models.ForeignKey(auth.models.User,
-                                  null=True,
-                                  blank=True,
-                                  on_delete=models.SET_NULL)
-    feedback = models.TextField()
+#TODO: revive feedback
+#class PeerFeedbackResponse(models.Model):
+#    """Represents an applicant's feedback regarding another brother."""
+#
+#    full_response = models.ForeignKey(ApplicantResponse,
+#                                      on_delete=models.CASCADE)
+#    peer = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
+#    feedback = models.TextField()

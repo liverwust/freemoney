@@ -4,8 +4,8 @@ from django.db import models
 class FinancialAidRecord(models.Model):
     """An ApplicantResponse record describing sources of financial aid."""
 
-    response = models.ForeignKey('ApplicantResponse',
-                                 on_delete=models.CASCADE)
+    full_response = models.ForeignKey('ApplicantResponse',
+                                      on_delete=models.CASCADE)
 
     # Response elements
     aid_type = models.CharField(
@@ -35,7 +35,7 @@ class FinancialAidRecord(models.Model):
         """
 
         errors = {}
-        if self.response.submitted or force:
+        if self.full_response.submitted or force:
             if self.aid_type == '':
                 errors['aid_type'] = ('aid type cannot be left blank',
                                       'required')

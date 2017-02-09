@@ -1,9 +1,10 @@
 import datetime
 from decimal import Decimal
-from django.contrib.auth.models import User
+#TODO: revive User
+#from django.contrib.auth.models import User
 from django.core.validators import ValidationError
 from django.test import TestCase
-from fm_apply.models import ApplicantResponse
+from fm_apply.models import ApplicantResponse, ScholarshipAwardPrompt
 
 
 class DeferredValidationTestCase(TestCase):
@@ -36,7 +37,8 @@ class DeferredValidationTestCase(TestCase):
     def setUp(self):
         self.due_at = (datetime.datetime.now(datetime.timezone.utc) +
                        datetime.timedelta(days=1))
-        self.applicant = User.objects.create_user('test_applicant')
+        #TODO: revive User
+        #self.applicant = User.objects.create_user('test_applicant')
 
     def assertBetween(self, first, second, third, msg=None):
         self.assertLessEqual(first, second, msg)
@@ -44,8 +46,9 @@ class DeferredValidationTestCase(TestCase):
 
     def test_timestamps(self):
         stamp1 = datetime.datetime.now(datetime.timezone.utc)
-        ar = ApplicantResponse.objects.create(due_at=self.due_at,
-                                              applicant=self.applicant)
+        ar = ApplicantResponse.objects.create(due_at=self.due_at)
+        #TODO: revive User
+                                              #applicant=self.applicant)
         stamp2 = datetime.datetime.now(datetime.timezone.utc)
         self.assertBetween(stamp1, ar.created_at, stamp2)
         self.assertBetween(stamp1, ar.updated_at, stamp2)
@@ -56,8 +59,9 @@ class DeferredValidationTestCase(TestCase):
         self.assertBetween(stamp2, ar.updated_at, stamp3)
 
     def test_mostly_blanks(self):
-        ar = ApplicantResponse.objects.create(due_at=self.due_at,
-                                              applicant=self.applicant)
+        ar = ApplicantResponse.objects.create(due_at=self.due_at)
+        #TODO: revive User
+                                              #applicant=self.applicant)
         ar.full_clean()
         ar.save()
         FBV = DeferredValidationTestCase.FIELD_x_BLANK_x_VALID
@@ -66,8 +70,9 @@ class DeferredValidationTestCase(TestCase):
 
     def test_maximum_errors(self):
         ar = ApplicantResponse.objects.create(due_at=self.due_at,
-                                              applicant=self.applicant,
                                               submitted=True)
+        #TODO: revive User
+                                              #applicant=self.applicant,
         with self.assertRaises(ValidationError) as cm:
             ar.full_clean()
             ar.save()
@@ -77,11 +82,17 @@ class DeferredValidationTestCase(TestCase):
         self.assertEqual(set(), expected - actual)
 
     def test_minimum_requirements(self):
+        st = ScholarshipAwardPrompt.objects.create(
+                name='test scholarship',
+                description='A Test Scholarship'
+        )
         ar = ApplicantResponse.objects.create(due_at=self.due_at,
-                                              applicant=self.applicant,
                                               submitted=True)
+        #TODO: revive User
+                                              #applicant=self.applicant,
         FBV = DeferredValidationTestCase.FIELD_x_BLANK_x_VALID
         for field, blank, valid in FBV:
             setattr(ar, field, valid)
+        ar.scholarshipawardprompt_set.add(st)
         ar.full_clean()
         ar.save()

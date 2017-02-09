@@ -2,7 +2,7 @@ from .prompts   import (VersionedPrompt,
                         ScholarshipAwardPrompt,
                         EssayPrompt)
 from .responses import (ApplicantResponse,
-                        PeerFeedbackResponse,
+#                        PeerFeedbackResponse,
                         EssayResponse)
 #from .records   import (FinancialAidRecord,
 #                        ActivityRecord)

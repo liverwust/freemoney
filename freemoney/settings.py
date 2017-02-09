@@ -123,3 +123,7 @@ PHONENUMBER_DEFAULT_REGION = 'US'
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# Minimum # peer feedback responses
+MIN_PEERFEEDBACK = 3
