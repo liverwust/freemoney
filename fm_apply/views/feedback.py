@@ -51,7 +51,9 @@ def wizard_feedback(request):
     """Page where brothers (peers) are selected for receiving feedback."""
 
     if 'full_response' in request.session:
-        full_response = request.session['full_response']
+        full_response = fm_models.ApplicantResponse.objects.get(
+                pk=request.session['full_response']
+        )
         if request.method == 'POST':
             records = _obtain_full_feedback_list()
             formset_class = forms.formset_factory(SinglePeerFeedbackForm,

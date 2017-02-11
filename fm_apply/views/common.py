@@ -18,11 +18,12 @@ def generate_nav_links(current_step):
 
     base_context = {'steps': []}
     for short_name, long_name in [('welcome', 'Welcome'),
-                                  ('awards', 'Choose Awards'),
-                                  ('feedback', 'Peer Feedback')]:
-        uri = reverse(short_name)
+                                  ('awards', 'Choose Awards')]:
+                                  #('feedback', 'Peer Feedback')]:
+        uri = reverse('fm_apply:' + short_name)
         is_active = (short_name == current_step)
-        base_context['steps'].append((short_name, long_name, uri, is_active))
+        is_enabled = True  # TODO: hacked
+        base_context['steps'].append((long_name, uri, is_active, is_enabled))
     return base_context
 
 
@@ -43,7 +44,9 @@ def fields_required_beyond_step(previous_step, fields):
         @wraps(view_func)
         def wrapped_view_func(request):
             if 'full_response' in request.session:
-                full_response = request.session['full_response']
+                full_response = fm_models.ApplicantResponse.objects.get(
+                        pk=request.session['full_response']
+                )
                 try:
                     if full_response.submitted:
                         # TODO: handle (much) more gracefully

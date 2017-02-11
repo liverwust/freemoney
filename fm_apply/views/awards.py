@@ -19,9 +19,12 @@ class AwardSelectionForm(forms.Form):
 @require_http_methods(['GET', 'HEAD', 'POST'])
 def wizard_awards(request):
     """Page where the scholarship awards are selected."""
+    my_path = reverse('fm_apply:awards')
 
     if 'full_response' in request.session:
-        full_response = request.session['full_response']
+        full_response = fm_models.ApplicantResponse.objects.get(
+                pk=request.session['full_response']
+        )
         if request.method == 'POST':
             form = AwardSelectionForm(request.POST)
             full_response.scholarshipawardprompt_set = form.award_selections
@@ -34,14 +37,17 @@ def wizard_awards(request):
                 del(request.session['full_response'])
                 return redirect(reverse('fm_apply:welcome'))
             else:
-                return redirect(request.path)
+                return redirect(my_path)
         else:
             form = AwardSelectionForm()
-            for award in full_response.scholarshipawardprompt_set:
+            for award in full_response.scholarshipawardprompt_set.all():
                 form.award_selections.append(award)
             context = generate_nav_links('awards')
+            context['postback'] = my_path
             context['form'] = form
             context['buttons'] = ['cancel', 'next']
-            return render('generic_wizard_form.html', context=context)
+            return render(request,
+                          'generic_wizard_form.html',
+                          context=context)
     else:
         return redirect(reverse('fm_apply:welcome'))

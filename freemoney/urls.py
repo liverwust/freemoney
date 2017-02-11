@@ -15,13 +15,13 @@ Including another URLconf
 """
 
 
-from django.conf.urls import url
+from django.conf.urls import include, url
 from django.contrib import admin
-import fm_apply.views
+from freemoney.views import index
 
 
-urlpatterns = [url(r'^$', fm_apply.views.index)]
-urlpatterns = [url(r'^apply/welcome$', fm_apply.views.wizard_welcome)]
-urlpatterns = [url(r'^apply/awards$', fm_apply.views.wizard_awards)]
-#urlpatterns = [url(r'^apply/feedback$', fm_apply.views.wizard_feedback)]
-urlpatterns.append(url(r'^admin/', admin.site.urls))
+urlpatterns = [
+        url(r'^$', index),
+        url(r'^admin/', admin.site.urls),
+        url(r'^apply/', include('fm_apply.urls')),
+]
