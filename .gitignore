@@ -6,6 +6,9 @@
 /pip-selfcheck.json
 /pyvenv.cfg
 
+# Local sqlite database(s)
+/*.db
+
 # Django project configuration environment (contains secrets!)
 /*/.env
 
