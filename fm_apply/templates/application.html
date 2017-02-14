@@ -5,12 +5,34 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Triangle Scholarship Application</title>
+    <title>PSU Triangle Scholarship Application</title>
 
     {% load bootstrap3 %}
-    {# Load CSS and JavaScript #}
     {% bootstrap_css %}
-    {% bootstrap_javascript %}
+    {% bootstrap_javascript jquery=1 %}
+
+    <style type="text/css">
+      .btn-selector {
+        color: #333;
+        background-color: #fff;
+        border-color: #ccc;
+      }
+      .btn-selector:hover {
+        color: #333;
+        background-color: #e6e6e6;
+        border-color: #adadad;
+      }
+      .btn-selector:focus, .btn-selector.focus {
+        color: #333;
+        background-color: #e6e6e6;
+        border-color: #8c8c8c;
+      }
+      .btn-selector.active {
+        color: #fff;
+        background-color: #449d44;
+        border-color: #398439;
+      }
+    </style>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -20,52 +42,53 @@
     <![endif]-->
   </head>
   <body>
-    <h1>Bootstrap</h1>
+    <div class="container">
+      <h1>PSU Triangle Scholarship Application</h1>
 
-    {# Display django.contrib.messages as Bootstrap alerts #}
-    {% bootstrap_messages %}
+      {# Display django.contrib.messages as Bootstrap alerts #}
+      {% bootstrap_messages %}
 
-    <ul class="nav nav-pills">
-      {% for long_name, uri, is_active, is_enabled in steps %}
-        {% if not is_enabled %}
-          <li role="presentation" class="disabled">
-            <a href="#">{{ long_name }}</a>
-          </li>
-        {% elif is_active %}
-          <li role="presentation" class="active">
-            <a href="{{ uri }}">{{ long_name }}</a>
-          </li>
-        {% else %}
-          <li role="presentation">
-            <a href="{{ uri }}">{{ long_name }}</a>
-          </li>
+      <ul class="nav nav-pills">
+        {% for long_name, uri, is_active, is_enabled in steps %}
+          {% if not is_enabled %}
+            <li role="presentation" class="disabled">
+              <a href="#">{{ long_name }}</a>
+            </li>
+          {% elif is_active %}
+            <li role="presentation" class="active">
+              <a href="{{ uri }}">{{ long_name }}</a>
+            </li>
+          {% else %}
+            <li role="presentation">
+              <a href="{{ uri }}">{{ long_name }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+
+      <form action="{{ postback }}" method="post" class="form">
+        {% csrf_token %}
+        {% block content %}
+        {% endblock %}
+
+        <div class="btn-group" role="group">
+        {% if "start" in buttons %}
+          {% bootstrap_button "Start" button_type="submit" button_class="btn-success" name="submit-type" value="start" %}
         {% endif %}
-      {% endfor %}
-    </ul>
-
-    <form action="{{ postback }}" method="post" class="form">
-      {% csrf_token %}
-      {% block content %}
-      {% endblock %}
-
-      <div class="btn-group" role="group">
-      {% if "start" in buttons %}
-        {% bootstrap_button "Start" button_type="submit" button_class="btn-success" name="submit-type" value="start" %}
-      {% endif %}
-      {% if "cancel" in buttons %}
-        {% bootstrap_button "Cancel" button_type="submit" button_class="btn-danger" name="submit-type" value="cancel" %}
-      {% endif %}
-      {% if "prev" in buttons %}
-        {% bootstrap_button "Previous" button_type="submit" button_class="btn-default" name="submit-type" value="prev" %}
-      {% endif %}
-      {% if "next" in buttons %}
-        {% bootstrap_button "Next" button_type="submit" button_class="btn-default" name="submit-type" value="next" %}
-      {% endif %}
-      {% if "submit" in buttons %}
-        {% bootstrap_button "Submit" button_type="submit" button_class="btn-success" name="submit-type" value="submit" %}
-      {% endif %}
-      </div>
-    </form>
-
+        {% if "cancel" in buttons %}
+          {% bootstrap_button "Cancel" button_type="submit" button_class="btn-danger" name="submit-type" value="cancel" %}
+        {% endif %}
+        {% if "prev" in buttons %}
+          {% bootstrap_button "Previous" button_type="submit" button_class="btn-default" name="submit-type" value="prev" %}
+        {% endif %}
+        {% if "next" in buttons %}
+          {% bootstrap_button "Next" button_type="submit" button_class="btn-default" name="submit-type" value="next" %}
+        {% endif %}
+        {% if "submit" in buttons %}
+          {% bootstrap_button "Submit" button_type="submit" button_class="btn-success" name="submit-type" value="submit" %}
+        {% endif %}
+        </div>
+      </form>
+    </div>
   </body>
 </html>
