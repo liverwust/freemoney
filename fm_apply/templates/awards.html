@@ -9,9 +9,15 @@
   <div class="row">
     <div class="col-md-12">
       <div class="btn-group" data-toggle="buttons">
-        <label class="btn btn-selector">
-          <input name="{{ selection.pk }}" type="checkbox" autocomplete="off">Apply for the {{ selection.name }}
-        </label>
+        {% if selection.selected %}
+          <label class="btn btn-selector active">
+            <input name="{{ selection.pk }}" type="checkbox" autocomplete="off" value="on" checked="checked">Apply for the {{ selection.name }}
+          </label>
+        {% else %}
+          <label class="btn btn-selector">
+            <input name="{{ selection.pk }}" type="checkbox" autocomplete="off">Apply for the {{ selection.name }}
+          </label>
+        {% endif %}
       </div>
     </div>
   </div>
