@@ -30,8 +30,7 @@ class VersionedPrompt(models.Model):
 class EssayPrompt(VersionedPrompt):
     """The prompt for an essay question."""
 
-    applicantresponse_set = models.ManyToManyField('ApplicantResponse',
-                                                   through='EssayResponse')
+    application_set = models.ManyToManyField('Application', through='Essay')
     prompt = models.TextField()
 
     def save(self, *args, **kwargs):
@@ -39,10 +38,10 @@ class EssayPrompt(VersionedPrompt):
         super(EssayPrompt, self).save(*args, **kwargs)
 
 
-class ScholarshipAwardPrompt(VersionedPrompt):
+class ScholarshipAward(VersionedPrompt):
     """Represents a particular scholarship award."""
 
-    applicantresponse_set = models.ManyToManyField('ApplicantResponse')
+    application_set = models.ManyToManyField('Application')
     name = models.CharField(max_length=255)
     description = models.TextField()
 
@@ -51,4 +50,4 @@ class ScholarshipAwardPrompt(VersionedPrompt):
 
     def save(self, *args, **kwargs):
         self._set_created_at_before_save()
-        super(ScholarshipAwardPrompt, self).save(*args, **kwargs)
+        super(ScholarshipAward, self).save(*args, **kwargs)

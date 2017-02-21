@@ -4,11 +4,11 @@ from decimal import Decimal
 #from django.contrib.auth.models import User
 from django.core.validators import ValidationError
 from django.test import TestCase
-from fm_apply.models import ApplicantResponse, ScholarshipAwardPrompt
+from freemoney.models import Application, ScholarshipAward
 
 
 class DeferredValidationTestCase(TestCase):
-    """Test "deferred" validation of an ApplicantResponse.
+    """Test "deferred" validation of an Application.
 
     To enable applicant's responses to be persisted before they are completed
     and submitted for review, it is necessary to defer validation until the
@@ -46,7 +46,7 @@ class DeferredValidationTestCase(TestCase):
 
     def test_timestamps(self):
         stamp1 = datetime.datetime.now(datetime.timezone.utc)
-        ar = ApplicantResponse.objects.create(due_at=self.due_at)
+        ar = Application.objects.create(due_at=self.due_at)
         #TODO: revive User
                                               #applicant=self.applicant)
         stamp2 = datetime.datetime.now(datetime.timezone.utc)
@@ -59,7 +59,7 @@ class DeferredValidationTestCase(TestCase):
         self.assertBetween(stamp2, ar.updated_at, stamp3)
 
     def test_mostly_blanks(self):
-        ar = ApplicantResponse.objects.create(due_at=self.due_at)
+        ar = Application.objects.create(due_at=self.due_at)
         #TODO: revive User
                                               #applicant=self.applicant)
         ar.full_clean()
@@ -69,7 +69,7 @@ class DeferredValidationTestCase(TestCase):
             self.assertEqual(blank, getattr(ar, field))
 
     def test_maximum_errors(self):
-        ar = ApplicantResponse.objects.create(due_at=self.due_at,
+        ar = Application.objects.create(due_at=self.due_at,
                                               submitted=True)
         #TODO: revive User
                                               #applicant=self.applicant,
@@ -82,17 +82,17 @@ class DeferredValidationTestCase(TestCase):
         self.assertEqual(set(), expected - actual)
 
     def test_minimum_requirements(self):
-        st = ScholarshipAwardPrompt.objects.create(
+        st = ScholarshipAward.objects.create(
                 name='test scholarship',
                 description='A Test Scholarship'
         )
-        ar = ApplicantResponse.objects.create(due_at=self.due_at,
+        ar = Application.objects.create(due_at=self.due_at,
                                               submitted=True)
         #TODO: revive User
                                               #applicant=self.applicant,
         FBV = DeferredValidationTestCase.FIELD_x_BLANK_x_VALID
         for field, blank, valid in FBV:
             setattr(ar, field, valid)
-        ar.scholarshipawardprompt_set.add(st)
+        ar.scholarshipaward_set.add(st)
         ar.full_clean()
         ar.save()

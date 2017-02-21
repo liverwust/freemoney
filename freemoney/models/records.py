@@ -1,11 +1,10 @@
 from django.db import models
 
 
-class FinancialAidRecord(models.Model):
-    """An ApplicantResponse record describing sources of financial aid."""
+class FinancialAid(models.Model):
+    """An Application record describing sources of financial aid."""
 
-    full_response = models.ForeignKey('ApplicantResponse',
-                                      on_delete=models.CASCADE)
+    application = models.ForeignKey('Application', on_delete=models.CASCADE)
 
     # Response elements
     aid_type = models.CharField(
@@ -31,11 +30,11 @@ class FinancialAidRecord(models.Model):
     def clean(self, force=False):
         """Perform checks which only apply to a submitted form.
 
-        See the ApplicantResponse.clean() documentation.
+        See the Application.clean() documentation.
         """
 
         errors = {}
-        if self.full_response.submitted or force:
+        if self.application.submitted or force:
             if self.aid_type == '':
                 errors['aid_type'] = ('aid type cannot be left blank',
                                       'required')

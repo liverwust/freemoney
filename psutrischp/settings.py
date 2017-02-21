@@ -10,10 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
+
 import environ
 import os
 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 env = environ.Env()
 environ.Env.read_env()
 
@@ -21,12 +24,10 @@ environ.Env.read_env()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
-
 ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,7 +38,6 @@ INSTALLED_APPS = [
     'bootstrap3',
     'phonenumber_field',
     'freemoney',
-    'fm_apply',
 ]
 
 MIDDLEWARE = [
@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'freemoney.urls'
+ROOT_URLCONF = 'psutrischp.urls'
 
 TEMPLATES = [
     {
@@ -68,7 +68,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'freemoney.wsgi.application'
+WSGI_APPLICATION = 'psutrischp.wsgi.application'
 
 
 # Database
@@ -98,30 +98,23 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
 
 # Phone number configuration
 # https://github.com/stefanfoulis/django-phonenumber-field/
-
 PHONENUMBER_DB_FORMAT = 'NATIONAL'
 PHONENUMBER_DEFAULT_REGION = 'US'
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
-
 STATIC_URL = '/static/'
 
 
-# Minimum # peer feedback responses
-MIN_PEERFEEDBACK = 3
+# Freemoney-specific configuration
+FREEMONEY_MIN_FEEDBACK = 3   # min # of feedback responses

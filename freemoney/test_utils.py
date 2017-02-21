@@ -1,5 +1,5 @@
 import datetime
-from fm_apply.utils import Semester
+from freemoney.utils import Semester
 import unittest
 
 

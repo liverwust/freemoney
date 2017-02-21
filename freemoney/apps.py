@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class FreemoneyConfig(AppConfig):
+class FreeMoneyConfig(AppConfig):
     name = 'freemoney'

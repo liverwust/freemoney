@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_safe
 from django.views.defaults import server_error
-from fm_apply import models as fm_models
+from freemoney.models import Application
 import functools
 
 
@@ -20,7 +20,7 @@ def generate_nav_links(current_step):
     for short_name, long_name in [('welcome', 'Welcome'),
                                   ('awards', 'Choose Awards')]:
                                   #('feedback', 'Peer Feedback')]:
-        uri = reverse('fm_apply:' + short_name)
+        uri = reverse('freemoney:' + short_name)
         is_active = (short_name == current_step)
         is_enabled = True  # TODO: hacked
         base_context['steps'].append((long_name, uri, is_active, is_enabled))
@@ -43,16 +43,16 @@ def fields_required_beyond_step(previous_step, fields):
     def decorator(view_func):
         @wraps(view_func)
         def wrapped_view_func(request):
-            if 'full_response' in request.session:
-                full_response = fm_models.ApplicantResponse.objects.get(
-                        pk=request.session['full_response']
+            if 'application' in request.session:
+                application= Application.objects.get(
+                        pk=request.session['application']
                 )
                 try:
-                    if full_response.submitted:
+                    if application.submitted:
                         # TODO: handle (much) more gracefully
                         return server_error()
                     else:
-                        full_response.full_clean(force=True)
+                        application.full_clean(force=True)
                 except ValidationError as exc:
                     for field in fields:
                         if field in exc.error_dict:

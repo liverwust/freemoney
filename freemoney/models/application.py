@@ -8,11 +8,11 @@ from django.core.validators import (MinValueValidator,
                                     MinLengthValidator,
                                     RegexValidator)
 from django.db import models
-from fm_apply.utils import Semester
+from freemoney.utils import Semester
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-class ApplicantResponse(models.Model):
+class Application(models.Model):
     """An applicant's entire response."""
 
     # Administrative
@@ -93,7 +93,7 @@ class ApplicantResponse(models.Model):
         if self.created_at == None:
             self.created_at = datetime.datetime.now(datetime.timezone.utc)
         self.updated_at = datetime.datetime.now(datetime.timezone.utc)
-        super(ApplicantResponse, self).save(*args, **kwargs)
+        super(Application, self).save(*args, **kwargs)
 
     def full_clean(self, force=False, *args, **kwargs):
         """Validate model fields, self-consistency, and uniqueness.
@@ -106,15 +106,15 @@ class ApplicantResponse(models.Model):
         if force:
             original_status = self.submitted
             self.submitted = True
-            super(ApplicantResponse, self).full_clean(*args, **kwargs)
+            super(Application, self).full_clean(*args, **kwargs)
             self.submitted = original_status
         else:
-            super(ApplicantResponse, self).full_clean(*args, **kwargs)
+            super(Application, self).full_clean(*args, **kwargs)
 
     def clean(self):
-        """Custom validation for an ApplicantResponse.
+        """Custom validation for an Application.
 
-        An ApplicantResponse can either be submitted, in which case all of its
+        An Application can either be submitted, in which case all of its
         fields should be valid according to the rules defined below, or
         unsubmitted, in which case many of its fields can be blank.
         """
@@ -126,8 +126,8 @@ class ApplicantResponse(models.Model):
             except ValidationError as exc:
                 error_dict = exc.error_dict
 
-            if len(self.scholarshipawardprompt_set.all()) < 1:
-                key = 'scholarshipawardprompt_set'
+            if len(self.scholarshipaward_set.all()) < 1:
+                key = 'scholarshipaward_set'
                 message = 'need to select at least one scholarship award'
                 error_dict[key] = ValidationError(message, code='invalid')
 
@@ -204,36 +204,3 @@ class ApplicantResponse(models.Model):
                                             code=errors[field][1])
         if len(errors) > 0:
             raise ValidationError(errors)
-
-
-class AdditionalRemarksResponse(models.Model):
-    """Represents additional info provided by the applicant.
-
-    There are a few text fields where an applicant can enter additional
-    remarks. They are all optional and somewhat "out-of-band," so they are
-    stored here rather than directly in the ApplicantResponse.
-    """
-
-    full_response = models.ForeignKey(ApplicantResponse,
-                                      on_delete=models.CASCADE)
-    remark_type = models.SlugField()
-    remark_content = models.TextField('additional remarks')
-
-
-class EssayResponse(models.Model):
-    """An ApplicantResponse record containing an essay."""
-
-    full_response = models.ForeignKey(ApplicantResponse,
-                                      on_delete=models.CASCADE)
-    prompt = models.ForeignKey('EssayPrompt', on_delete=models.CASCADE)
-    text = models.TextField()
-
-
-#TODO: revive feedback
-#class PeerFeedbackResponse(models.Model):
-#    """Represents an applicant's feedback regarding another brother."""
-#
-#    full_response = models.ForeignKey(ApplicantResponse,
-#                                      on_delete=models.CASCADE)
-#    peer = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
-#    feedback = models.TextField()
