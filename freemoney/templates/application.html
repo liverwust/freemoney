@@ -72,9 +72,6 @@
         {% endblock %}
 
         <div class="btn-group" role="group">
-        {% if "start" in buttons %}
-          {% bootstrap_button "Start" button_type="submit" button_class="btn-success" name="submit-type" value="start" %}
-        {% endif %}
         {% if "cancel" in buttons %}
           {% bootstrap_button "Cancel" button_type="submit" button_class="btn-danger" name="submit-type" value="cancel" %}
         {% endif %}

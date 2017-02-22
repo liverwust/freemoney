@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from django import test
+from django.contrib.auth import get_user_model
 from django.urls import reverse
-from freemoney.models import Application, ScholarshipAward
+from freemoney.models import Application, ApplicantProfile, ScholarshipAward
 from io import BytesIO
 from lxml import etree
 
@@ -10,6 +11,15 @@ class AwardsPageTestCase(test.TestCase):
     """Test applying for awards and general control flow thru this page."""
 
     def setUp(self):
+        self.test_user = get_user_model().objects.create_user(
+                username='test@example.com',
+                password='pass1234'
+        )
+        self.test_profile = ApplicantProfile.objects.create(
+                user=self.test_user,
+                must_change_password=False
+        )
+        self.client.login(username='test@example.com', password='pass1234')
         ScholarshipAward.objects.create(
                 persistent_tag='',
                 name='Scholarship 1',
@@ -26,7 +36,8 @@ class AwardsPageTestCase(test.TestCase):
                 description='Yep, keep <b>winning</b> monnnnnney & stuff'
         )
         self.application_so_far = Application.objects.create(
-                due_at=(datetime.now(timezone.utc) + timedelta(weeks=1))
+                due_at=(datetime.now(timezone.utc) + timedelta(weeks=1)),
+                applicant=self.test_profile
         )
         session = self.client.session
         session['application'] = self.application_so_far.pk
@@ -47,7 +58,8 @@ class AwardsPageTestCase(test.TestCase):
     def test_select_one_by_one(self):
         """Starting from none, select each available award in turn."""
 
-        checkboxes = {}
+        checkboxes = {'submit-type': 'next'}
+        baseline_len = len(checkboxes)
         while True:
             page = self.client.get(reverse('freemoney:awards'))
             ET = etree.parse(BytesIO(page.content), etree.HTMLParser())
@@ -66,14 +78,14 @@ class AwardsPageTestCase(test.TestCase):
                 self.client.post(reverse('freemoney:awards'), checkboxes)
             else:
                 break
-        self.assertEqual(len(checkboxes), 3)
+        self.assertEqual(len(checkboxes), 3 + baseline_len)
 
     def test_select_deselect_all_at_once(self):
         """Starting from none, select all awards, then deselect all."""
 
         page = self.client.get(reverse('freemoney:awards'))
         ET = etree.parse(BytesIO(page.content), etree.HTMLParser())
-        checkboxes = {}
+        checkboxes = {'submit-type': 'next'}
         for element in ET.findall(r".//form//input[@type='checkbox']"):
             checkboxes[element.get('name')] = 'on'
 
@@ -87,7 +99,8 @@ class AwardsPageTestCase(test.TestCase):
             self.assertEqual(element.get('value'), 'on')
 
         # deselect all checkboxes
-        self.client.post(reverse('freemoney:awards'))
+        no_checkboxes = {'submit-type': 'next'}
+        self.client.post(reverse('freemoney:awards'), no_checkboxes)
 
         page = self.client.get(reverse('freemoney:awards'))
         ET = etree.parse(BytesIO(page.content), etree.HTMLParser())

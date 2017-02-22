@@ -1,3 +1,3 @@
-from .welcome import wizard_welcome
-from .awards import wizard_awards
+from .welcome import WelcomePage
+from .awards import AwardsPage
 #from .feedback import wizard_feedback

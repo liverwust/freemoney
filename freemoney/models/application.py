@@ -1,7 +1,6 @@
 import datetime
 import decimal
 from django.conf import settings
-from django.contrib import auth
 from django.core.exceptions import ValidationError
 from django.core.validators import (MinValueValidator,
                                     MaxValueValidator,
@@ -17,8 +16,7 @@ class Application(models.Model):
 
     # Administrative
     submitted = models.BooleanField(default=False)
-    #TODO: fully integrate User
-    #applicant = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
+    applicant = models.ForeignKey('ApplicantProfile', on_delete=models.CASCADE)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
     due_at = models.DateTimeField()

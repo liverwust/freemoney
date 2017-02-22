@@ -24,4 +24,5 @@ urlpatterns = [
         url(r'^$', RedirectView.as_view(url='/freemoney/welcome')),
         url(r'^admin/', admin.site.urls),
         url(r'^freemoney/', include('freemoney.urls')),
+        url(r'^accounts/', include('django.contrib.auth.urls')),
 ]

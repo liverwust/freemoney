@@ -234,6 +234,33 @@ class Migration(migrations.Migration):
                     ],
                     options={'abstract': False},
             ),
+            migrations.CreateModel(
+                    name='ApplicantProfile',
+                    fields=[
+                            ('user',
+                             models.OneToOneField(
+                                    on_delete=django.db.models.deletion.CASCADE,
+                                    primary_key=True,
+                                    serialize=False,
+                                    to=settings.AUTH_USER_MODEL
+                             )),
+                            ('must_change_password', models.BooleanField()),
+                    ],
+            ),
+            migrations.CreateModel(
+                    name='PeerProfile',
+                    fields=[
+                            ('user',
+                             models.OneToOneField(
+                                    on_delete=django.db.models.deletion.CASCADE,
+                                    primary_key=True,
+                                    serialize=False,
+                                    to=settings.AUTH_USER_MODEL
+                             )),
+                            ('active', models.BooleanField()),
+                            ('display_name', models.CharField(max_length=255)),
+                    ],
+            ),
             migrations.AddField(
                     model_name='EssayPrompt',
                     name='application_set',
@@ -258,5 +285,12 @@ class Migration(migrations.Migration):
                             null=True,
                             on_delete=django.db.models.deletion.SET_NULL,
                             to='freemoney.ScholarshipAward'),
+            ),
+            migrations.AddField(
+                    model_name='Application',
+                    name='applicant',
+                    field=models.ForeignKey(
+                            on_delete=django.db.models.deletion.CASCADE,
+                            to='freemoney.ApplicantProfile'),
             ),
     ]
