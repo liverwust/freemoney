@@ -8,8 +8,8 @@ urlpatterns = [
                           name='welcome'),
         url(r'^awards$', freemoney.views.AwardsPage.as_view(),
                          name='awards'),
-       #url(r'^feedback$', fm_apply.views.wizard_feedback, 
-                          # name='feedback'),
+        url(r'^feedback$', freemoney.views.FeedbackPage.as_view(),
+                           name='feedback'),
         url(r'^dummy$', freemoney.views.dummy.DummyPage.as_view(),
                         name='dummy')   # TODO: remove
 ]

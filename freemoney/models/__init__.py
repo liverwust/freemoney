@@ -4,5 +4,6 @@ from .profiles    import (ApplicantProfile,
 from .prompts     import (VersionedPrompt,
                           ScholarshipAward,
                           EssayPrompt)
-from .responses   import  Essay
+from .responses   import (Essay,
+                          PeerFeedback)
 from .records     import  FinancialAid

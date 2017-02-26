@@ -23,11 +23,9 @@ class Essay(models.Model):
     text = models.TextField()
 
 
-#TODO: revive feedback
-#class PeerFeedbackResponse(models.Model):
-#    """Represents an applicant's feedback regarding another brother."""
-#
-#    full_response = models.ForeignKey(ApplicantResponse,
-#                                      on_delete=models.CASCADE)
-#    peer = models.ForeignKey(auth.models.User, on_delete=models.CASCADE)
-#    feedback = models.TextField()
+class PeerFeedback(models.Model):
+    """Represents an applicant's feedback regarding another brother."""
+
+    application = models.ForeignKey('Application', on_delete=models.CASCADE)
+    peer = models.ForeignKey('PeerProfile', on_delete=models.CASCADE)
+    feedback = models.TextField()

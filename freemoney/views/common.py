@@ -35,9 +35,8 @@ class WizardView(LoginRequiredMixin, View):
 
     PAGES = [('welcome', 'Welcome'),
              ('awards', 'Choose Awards'),
-             ('dummy', 'Dummy Page')] # TODO: get rid of this
-             #('awards', 'Choose Awards'),
-             #('feedback', 'Peer Feedback')]
+             ('feedback', 'Peer Feedback'),
+             ('dummy', 'Dummy Page')] # TODO: get rid of this last line
 
     # don't allow PUT, PATCH, or DELETE
     http_method_names = ['get', 'post', 'head', 'options', 'trace']

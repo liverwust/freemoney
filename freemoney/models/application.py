@@ -82,9 +82,9 @@ class Application(models.Model):
             help_text='Do you pay the reduced tuition rate for PA residents?',
             blank=True
     )
-    #TODO: revive User
-    #reviewedpeer_set = models.ManyToManyField(auth.models.User,
-    #                                          through='PeerFeedbackResponse')
+
+    reviewedpeer_set = models.ManyToManyField('PeerProfile',
+                                              through='PeerFeedback')
 
     def save(self, *args, **kwargs):
         """Update timestamps on save."""
@@ -129,14 +129,13 @@ class Application(models.Model):
                 message = 'need to select at least one scholarship award'
                 error_dict[key] = ValidationError(message, code='invalid')
 
-#TODO: revive User
-#            if (len(self.peerfeedbackresponse_set.all()) <
-#                settings.MIN_PEERFEEDBACK):
-#                key = 'peerfeedbackresponse_set'
-#                message = 'need at least {} peer feedbacks'.format(
-#                        settings.MIN_PEERFEEDBACK
-#                )
-#                error_dict[key] = ValidationError(message, code='invalid')
+            if (self.reviewedpeer_set.count() <
+                settings.FREEMONEY_MIN_FEEDBACK):
+                key = 'reviewedpeer_set'
+                message = 'need at least {} peer feedbacks'.format(
+                        settings.FREEMONEY_MIN_FEEDBACK
+                )
+                error_dict[key] = ValidationError(message, code='invalid')
         if error_dict != {}:
             raise ValidationError(error_dict)
 

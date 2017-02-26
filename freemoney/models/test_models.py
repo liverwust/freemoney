@@ -3,7 +3,11 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.validators import ValidationError
 from django.test import TestCase
-from freemoney.models import Application, ApplicantProfile, ScholarshipAward
+from freemoney.models import (Application,
+                              ApplicantProfile,
+                              ScholarshipAward,
+                              PeerFeedback,
+                              PeerProfile)
 
 
 class DeferredValidationTestCase(TestCase):
@@ -99,5 +103,24 @@ class DeferredValidationTestCase(TestCase):
         for field, blank, valid in FBV:
             setattr(ar, field, valid)
         ar.scholarshipaward_set.add(st)
+        for i in range(3):
+            fake_user = get_user_model().objects.create_user(
+                    username='test000{}@example.com'.format(i),
+                    password='abcd1234'
+            )
+            ApplicantProfile.objects.create(
+                    user=fake_user,
+                    must_change_password=False
+            )
+            fake_profile = PeerProfile.objects.create(
+                    user=fake_user,
+                    active=True,
+                    display_name='Fake User {}'.format(i)
+            )
+            PeerFeedback.objects.create(
+                application=ar,
+                peer=fake_profile,
+                feedback='Test Feedback for {}'.format(i)
+            )
         ar.full_clean()
         ar.save()
