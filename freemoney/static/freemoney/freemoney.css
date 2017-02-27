@@ -1,0 +1,20 @@
+.btn-selector {
+  color: #333;
+  background-color: #fff;
+  border-color: #ccc;
+}
+.btn-selector:hover {
+  color: #333;
+  background-color: #e6e6e6;
+  border-color: #adadad;
+}
+.btn-selector:focus, .btn-selector.focus {
+  color: #333;
+  background-color: #e6e6e6;
+  border-color: #8c8c8c;
+}
+.btn-selector.active {
+  color: #fff;
+  background-color: #449d44;
+  border-color: #398439;
+}

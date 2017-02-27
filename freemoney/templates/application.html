@@ -10,29 +10,10 @@
     {% load bootstrap3 %}
     {% bootstrap_css %}
     {% bootstrap_javascript jquery=1 %}
+    {% load static %}
 
-    <style type="text/css">
-      .btn-selector {
-        color: #333;
-        background-color: #fff;
-        border-color: #ccc;
-      }
-      .btn-selector:hover {
-        color: #333;
-        background-color: #e6e6e6;
-        border-color: #adadad;
-      }
-      .btn-selector:focus, .btn-selector.focus {
-        color: #333;
-        background-color: #e6e6e6;
-        border-color: #8c8c8c;
-      }
-      .btn-selector.active {
-        color: #fff;
-        background-color: #449d44;
-        border-color: #398439;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{% static "freemoney/freemoney.css" %}" />
+    <script src="{% static "freemoney/freemoney.js" %}"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
