@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 
+from datetime import date
 import environ
 import os
 
@@ -118,3 +119,5 @@ STATIC_URL = '/static/'
 
 # Freemoney-specific configuration
 FREEMONEY_MIN_FEEDBACK = 3   # min # of feedback responses
+FREEMONEY_CURRENT_SEMESTER = "SP17"   # see Semester model for format info
+FREEMONEY_DUE_DATE = date(2017, 4, 9) # 11:59:59 PM EST on this date

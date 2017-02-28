@@ -103,7 +103,7 @@ class Semester:
             raise ValueError('malformed semester descriptor')
 
 
-class SemesterModelField(models.DateField):
+class SemesterField(models.DateField):
 
     description = "Represents the pairing of a semester and a year in the DB"
 
@@ -116,7 +116,7 @@ class SemesterModelField(models.DateField):
             return Semester(value)
 
     def get_prep_value(self, value):
-        value = super(SemesterModelField, self).get_prep_value(value)
+        value = super(SemesterField, self).get_prep_value(value)
         if value is None:
             return value
         else:
@@ -129,7 +129,7 @@ class SemesterModelField(models.DateField):
         else:
             try:
                 # Assuming a date-like value, try to normalize it first
-                value = super(SemesterModelField, self).to_python(value)
+                value = super(SemesterField, self).to_python(value)
             except exceptions.ValidationError as exc:
                 if exc.code == 'invalid_date' and exc.params['value'] == value:
                     # value is indeed a date(time) but is malformed; reraise
@@ -163,4 +163,4 @@ class SemesterModelField(models.DateField):
         from freemoney.views import SemesterFormField
         defaults = {'form_class': SemesterFormField}
         defaults.update(kwargs)
-        return super(SemesterModelField, self).formfield(**defaults)
+        return super(SemesterField, self).formfield(**defaults)

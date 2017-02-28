@@ -14,7 +14,7 @@ from django.db.models import (Model,
                               ForeignKey,
                               TextField)
 from freemoney.models import (Semester,
-                              SemesterModelField)
+                              SemesterField)
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -23,7 +23,7 @@ class Application(Model):
 
     submitted = BooleanField(default=False)
     applicant = ForeignKey('ApplicantProfile', on_delete=CASCADE)
-    application_semester = SemesterModelField()
+    application_semester = SemesterField()
 
     # Contact information
     address = TextField('permanent mailing address',
@@ -44,8 +44,8 @@ class Application(Model):
                               help_text='Do you pay out-of-state tuition?')
 
     # Membership information
-    semester_initiated = SemesterModelField(null=True)
-    semester_graduating = SemesterModelField(null=True)
+    semester_initiated = SemesterField(null=True)
+    semester_graduating = SemesterField(null=True)
 
     # Scholastic information
     cumulative_gpa = DecimalField('cumulative GPA',
@@ -62,10 +62,10 @@ class Application(Model):
             null=True,
             validators=[MinValueValidator(Decimal("0.00")),
                         MaxValueValidator(Decimal("4.00"))])
-    in_state_tuition = models.NullBooleanField(
+    in_state_tuition = BooleanField(
             'in-state tuition',
             help_text='Do you pay the reduced tuition rate for PA residents?',
-            blank=True
+            default=False,
     )
 
     # Applicant responses
