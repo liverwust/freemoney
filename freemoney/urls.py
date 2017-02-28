@@ -6,8 +6,8 @@ app_name = 'freemoney'
 urlpatterns = [
         url(r'^welcome$', freemoney.views.WelcomePage.as_view(),
                           name='welcome'),
-        url(r'^awards$', freemoney.views.AwardsPage.as_view(),
-                         name='awards'),
+        url(r'^award$', freemoney.views.AwardPage.as_view(),
+                         name='award'),
         url(r'^feedback$', freemoney.views.FeedbackPage.as_view(),
                            name='feedback'),
         url(r'^dummy$', freemoney.views.dummy.DummyPage.as_view(),

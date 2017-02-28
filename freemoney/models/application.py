@@ -1,121 +1,78 @@
 import datetime
-import decimal
+from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import (MinValueValidator,
                                     MaxValueValidator,
-                                    MinLengthValidator,
                                     RegexValidator)
-from django.db import models
-from freemoney.utils import Semester
+from django.db.models import (Model,
+                              CASCADE,
+                              BooleanField,
+                              CharField,
+                              DecimalField,
+                              EmailField,
+                              ForeignKey,
+                              TextField)
+from freemoney.models import (Semester,
+                              SemesterModelField)
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-class Application(models.Model):
+class Application(Model):
     """An applicant's entire response."""
 
-    # Administrative
-    submitted = models.BooleanField(default=False)
-    applicant = models.ForeignKey('ApplicantProfile', on_delete=models.CASCADE)
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
-    due_at = models.DateTimeField()
+    submitted = BooleanField(default=False)
+    applicant = ForeignKey('ApplicantProfile', on_delete=CASCADE)
+    application_semester = SemesterModelField()
 
-    # Actual response elements (see the clean method for further validations)
-    name = models.CharField(
-            'full name',
-            max_length=255,
-            blank=True
-    )
-    address = models.TextField(
-            'permanent mailing address',
-            blank=True
-    )
-    phone = PhoneNumberField(
-            'primary phone number',
-            help_text='Cell phone is acceptable',
-            blank=True
-    )
-    psu_email = models.EmailField(
-            'university e-mail address',
-            help_text='This is your psu.edu e-mail',
-            blank=True,
-            validators=[RegexValidator(r'^(?:[^@]+@psu.edu)?$')]
-    )
-    preferred_email = models.EmailField(
-            'preferred e-mail address',
-            blank=True
-    )
-    psu_id = models.CharField(
-            'university ID number',
-            help_text='Nine digits: 9xxxxxxxx',
-            max_length=9,
-            blank=True,
-            validators=[RegexValidator(r'^(?:9\d{8})?$')]
-    )
-    date_initiated = models.DateField(
-            'date of initiation',
-            null=True,
-            blank=True
-    )
-    date_graduating = models.DateField(
-            'planned graduation date',
-            null=True,
-            blank=True
-    )
-    cumulative_gpa = models.DecimalField(
-            'cumulative GPA',
+    # Contact information
+    address = TextField('permanent mailing address',
+                        help_text='Where can we mail your money (by check)?')
+    phone = PhoneNumberField('primary phone number',
+                             help_text='Cell phone is acceptable')
+    psu_email = EmailField('university e-mail address',
+                           help_text='This is your psu.edu e-mail',
+                           validators=[RegexValidator(r'@psu.edu$')])
+    preferred_email = EmailField('preferred e-mail address',
+                                 help_text='Leave blank if same as above')
+    psu_id = CharField('university ID number',
+                       help_text='Nine digits: 9xxxxxxxx',
+                       max_length=9,
+                       validators=[RegexValidator(r'^(?:9\d{8})?$')])
+    outside_pa = BooleanField('out-of-state resident',
+                              default=False,
+                              help_text='Do you pay out-of-state tuition?')
+
+    # Membership information
+    semester_initiated = SemesterModelField(null=True)
+    semester_graduating = SemesterModelField(null=True)
+
+    # Scholastic information
+    cumulative_gpa = DecimalField('cumulative GPA',
+            help_text='Cumulative GPA as of the end of last semester',
             max_digits=3,
             decimal_places=2,
             null=True,
-            blank=True
-    )
-    semester_gpa = models.DecimalField(
-            'last semester GPA',
+            validators=[MinValueValidator(Decimal("0.00")),
+                        MaxValueValidator(Decimal("4.00"))])
+    semester_gpa = DecimalField('semester GPA',
+            help_text='Semester GPA for the most recent completed semester',
             max_digits=3,
             decimal_places=2,
             null=True,
-            blank=True
-    )
+            validators=[MinValueValidator(Decimal("0.00")),
+                        MaxValueValidator(Decimal("4.00"))])
     in_state_tuition = models.NullBooleanField(
             'in-state tuition',
             help_text='Do you pay the reduced tuition rate for PA residents?',
             blank=True
     )
 
-    reviewedpeer_set = models.ManyToManyField('PeerProfile',
-                                              through='PeerFeedback')
+    # Applicant responses
+    additional_remarks = TextField(blank=True)
 
-    def save(self, *args, **kwargs):
-        """Update timestamps on save."""
-        if self.created_at == None:
-            self.created_at = datetime.datetime.now(datetime.timezone.utc)
-        self.updated_at = datetime.datetime.now(datetime.timezone.utc)
-        super(Application, self).save(*args, **kwargs)
-
-    def full_clean(self, force=False, *args, **kwargs):
-        """Validate model fields, self-consistency, and uniqueness.
-
-        Pass force=True to pretend that the response has been submitted for
-        review, for the purposes of testing intermediate validity. See the
-        clean() method docstring for the significance of this.
-        """
-
-        if force:
-            original_status = self.submitted
-            self.submitted = True
-            super(Application, self).full_clean(*args, **kwargs)
-            self.submitted = original_status
-        else:
-            super(Application, self).full_clean(*args, **kwargs)
-
-    def clean(self):
-        """Custom validation for an Application.
-
-        An Application can either be submitted, in which case all of its
-        fields should be valid according to the rules defined below, or
-        unsubmitted, in which case many of its fields can be blank.
-        """
+    def custom_validate(self):
+        """Validate model fields, self-consistency, and uniqueness."""
 
         error_dict = {}
         if self.submitted:
@@ -195,6 +152,31 @@ class Application(models.Model):
         if self.in_state_tuition == None:
             errors['in_state_tuition'] = ('select in/out state tuition',
                                             'required')
+        if self.peerfeedback_set.count() < settings.FREEMONEY_MIN_FEEDBACK:
+            errors.append(ValidationError(
+                    'Need %(min)s peer feedback entries; only %(curr)s given',
+                    code='feedback:min_length',
+                    params={'min': str(settings.FREEMONEY_MIN_FEEDBACK),
+                            'curr': str(self.peerfeedback_set.count())}
+            ))
+
+        if (self.semester_initiated != None and
+            self.semester_initiated > self.application_semester):
+            errors.append(ValidationError({
+                    'semester_initiated': ValidationError(
+                            'Semester of initiation is in the future',
+                            code='invalid'
+                    )
+            }))
+
+        if (self.semester_graduating != None and
+            self.semester_graduating < self.application_semester):
+            errors.append(ValidationError({
+                    'semester_graduating': ValidationError(
+                            'Semester of graduation is in the past',
+                            code='invalid'
+                    )
+            }))
 
         for field in errors.keys():
             errors[field] = ValidationError(errors[field][0],

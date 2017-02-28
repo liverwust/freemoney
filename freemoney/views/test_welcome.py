@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from django import test
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from freemoney.models import Application, ApplicantProfile
+from freemoney.models import Application, ApplicantProfile, Semester
 from io import BytesIO
 from lxml import etree
 
@@ -17,7 +17,7 @@ class CommonWizardViewTestCase(test.TestCase):
         )
         self.test_profile = ApplicantProfile.objects.create(
                 user=self.test_user,
-                must_change_password=False
+                is_first_login=False
         )
         self.client.login(username='test@example.com', password='pass1234')
 
@@ -29,7 +29,7 @@ class CommonWizardViewTestCase(test.TestCase):
                                   tzinfo=timezone.utc)
         self.client.get(reverse('freemoney:welcome'))
         dupe_application = Application.objects.create(
-                due_at=cycle_due_date,
+                application_semester=Semester(cycle_due_date),
                 applicant=self.test_profile
         )
         # TODO: should NOT check for an exception, but an error page!
@@ -49,10 +49,10 @@ class CommonWizardViewTestCase(test.TestCase):
         )
         other_profile = ApplicantProfile.objects.create(
                 user=other_user,
-                must_change_password=False
+                is_first_login=False
         )
         other_application = Application.objects.create(
-                due_at=cycle_due_date,
+                application_semester=Semester(cycle_due_date),
                 applicant=other_profile
         )
         response = self.client.get(reverse('freemoney:welcome'))

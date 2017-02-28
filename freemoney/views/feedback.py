@@ -1,10 +1,8 @@
 from collections import namedtuple
 from django import forms
-from django.core.exceptions import ValidationError
 from django.shortcuts import render
-from django.urls import reverse
-from django.utils.html import escape
-from freemoney.models import Application, PeerProfile, PeerFeedback
+from django.views.defaults import server_error
+from freemoney.models import Application, ApplicantProfile, PeerFeedback
 import re
 
 
@@ -20,15 +18,19 @@ class FeedbackPage(WizardView):
     def render_page(self, context):
         existing_responses = list(self.application.peerfeedback_set.all())
         peer_metadata = []
-        for peer in PeerProfile.objects.order_by('display_name').iterator():
-            if peer.user != self.request.user and peer.active:
+        #TODO: fix ordering
+        #for peer in PeerProfile.objects.order_by('display_name').iterator():
+        for peer in ApplicantProfile.objects.iterator():
+            if (peer.user != self.request.user and
+                True):   # TODO: compare semester against "current" semester
                 feedback = ""
                 for response in existing_responses:
                     if response.peer == peer:
                         feedback = response.feedback
                         break
                 peer_metadata.append({'peer_id': peer.pk,
-                                    'peer_name': peer.display_name,
+                                    # TODO: use display name
+                                    'peer_name': peer.user.username,
                                     'feedback': feedback,
                                     'expanded': (feedback != ""),
                                     'collapse_id': 'collapse_'+str(peer.pk)})
@@ -51,7 +53,7 @@ class FeedbackPage(WizardView):
         formset = MultiplePeerFeedbackForm(self.request.POST)
         if not formset.is_valid():
             # TODO: error handling here
-            return False
+            return server_error(self.request)
         existing_responses = list(self.application.peerfeedback_set.all())
         existing_by_peer = {}
         for response in existing_responses:
@@ -67,13 +69,14 @@ class FeedbackPage(WizardView):
                     response.save()
             else:
                 new_response = PeerFeedback.objects.create(
-                        peer=PeerProfile.objects.get(
+                        peer=ApplicantProfile.objects.get(
                                 pk=form.cleaned_data['peer_id']
                         ),
                         feedback=form.cleaned_data['feedback'],
                         application=self.application
                 )
-        return True
+        # success; proceed as usual to the next/previous/whatever step
+        return None
 
 
 class SinglePeerFeedbackForm(forms.Form):

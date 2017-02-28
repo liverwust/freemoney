@@ -1,3 +1,3 @@
-from .welcome import WelcomePage
-from .awards import AwardsPage
+from .welcome  import WelcomePage
+from .award    import AwardPage
 from .feedback import FeedbackPage

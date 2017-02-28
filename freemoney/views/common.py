@@ -5,8 +5,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views import View
 from django.views.defaults import server_error
-from freemoney.models import Application
-from freemoney.utils import Semester
+from freemoney.models import Application, Semester
 
 
 class WizardView(LoginRequiredMixin, View):
@@ -29,12 +28,12 @@ class WizardView(LoginRequiredMixin, View):
     Override the following instance functions (which can reference the
     .application and .request properties):
     * ``render_page()``: return a rendered response to a GET request
-    * ``save_changes()``: handle client data during POST; return False to
-      prevent moving off of the current page
+    * ``save_changes()``: handle client data during POST; return a rendered
+      response, or None to proceed to the next/previous/final step
     """
 
     PAGES = [('welcome', 'Welcome'),
-             ('awards', 'Choose Awards'),
+             ('award',  'Choose Awards'),
              ('feedback', 'Peer Feedback'),
              ('dummy', 'Dummy Page')] # TODO: get rid of this last line
 
@@ -72,7 +71,7 @@ class WizardView(LoginRequiredMixin, View):
     def _error_response_unless_applicant(self):
         try:
             applicantprofile = self.request.user.applicantprofile
-            if applicantprofile.must_change_password:
+            if applicantprofile.is_first_login:
                 # TODO: forced password change
                 return server_error(self.request)
             else:
@@ -83,9 +82,10 @@ class WizardView(LoginRequiredMixin, View):
 
     def _ensure_application(self):
         # TODO: make sure that can be set by an admin
-        cycle_due_date = datetime(year=2017, month=4, day=1, 
-                                  hour=23, minute=59, second=59,
-                                  tzinfo=timezone.utc)
+        # TODO: revive due date concept
+#        cycle_due_date = datetime(year=2017, month=4, day=1, 
+#                                  hour=23, minute=59, second=59,
+#                                  tzinfo=timezone.utc)
 
         application = None
         if 'application' in self.request.session:
@@ -97,15 +97,17 @@ class WizardView(LoginRequiredMixin, View):
                     applicant=self.request.user.applicantprofile
             ).first()
             if application == None:
-                if datetime.now(timezone.utc) < cycle_due_date:
+                #if datetime.now(timezone.utc) < cycle_due_date:
                     application = Application.objects.create(
-                            due_at=cycle_due_date,
+                            #TODO: due date
+                            #due_at=cycle_due_date,
+                            application_semester=Semester(datetime.now(timezone.utc)),
                             applicant=self.request.user.applicantprofile
                     )
                     self.request.session['application'] = application.pk
-                else:
+                #else:
                     # TODO: handle more gracefully
-                    raise Exception('Too late!')
+                    #raise Exception('Too late!')
 
         potential_dupe_apps = Application.objects.filter(
                 applicant=self.request.user.applicantprofile
@@ -125,7 +127,7 @@ class WizardView(LoginRequiredMixin, View):
     def _error_response_unless_validated(self):
         if len(self._required_fields) > 0:
             try:
-                self.application.full_clean(force=True)
+                self.application.full_clean()
                 return None   # definite success, no validation errors
             except ValidationError as exc:
                 for field in self._required_fields:
@@ -194,18 +196,18 @@ class WizardView(LoginRequiredMixin, View):
                     # TODO: back to some landing page
                     return redirect(self._uri_of('dummy'))
                 elif submit_type == 'submit':
-                    if self.save_changes():
+                    rendered_result = self.save_changes()
+                    if rendered_result == None:
                         # TODO: go to a "finished" page
                         return server_error(self.request)
                     else:
-                        # TODO: error handling?
-                        return redirect(self._uri_of(self._page_name))
+                        return rendered_result
                 else:
-                    if self.save_changes():
+                    rendered_result = self.save_changes()
+                    if rendered_result == None:
                         return redirect(self._uri_of(button_page[0]))
                     else:
-                        # TODO: error handling?
-                        return redirect(self._uri_of(self._page_name))
+                        return rendered_result
         raise ValueError('unrecognized or invalid submit-type')
 
     def render_page(self, context):
@@ -215,6 +217,6 @@ class WizardView(LoginRequiredMixin, View):
         else:
             return render(self.request, self._template_name, context=context)
 
-    def save_changes(self):
-        """Override and return True to proceed or False to stay on page."""
-        return True
+    def save_changes(self, context):
+        """Override and return a rendered response, or None to proceed"""
+        return None
