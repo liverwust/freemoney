@@ -18,6 +18,4 @@ class ApplicantProfile(_ddb_models.Model):
     user = _ddb_models.OneToOneField(settings.AUTH_USER_MODEL,
                                      on_delete=_ddb_models.CASCADE,
                                      primary_key=True)
-    is_first_login = _ddb_models.BooleanField(
-            help_text='Should this user be asked to change his password?'
-    )
+    must_change_password = _ddb_models.BooleanField(default=False)

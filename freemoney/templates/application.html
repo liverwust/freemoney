@@ -72,8 +72,8 @@
         {% endblock %}
 
         <div class="btn-group" role="group">
-        {% if "cancel" in buttons %}
-          {% bootstrap_button "Cancel" button_type="submit" button_class="btn-danger" name="submit-type" value="cancel" %}
+        {% if "restart" in buttons %}
+          {% bootstrap_button "Start Over" button_type="submit" button_class="btn-danger" name="submit-type" value="restart" %}
         {% endif %}
         {% if "prev" in buttons %}
           {% bootstrap_button "Previous" button_type="submit" button_class="btn-default" name="submit-type" value="prev" %}

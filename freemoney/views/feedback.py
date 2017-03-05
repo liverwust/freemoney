@@ -6,10 +6,10 @@ from freemoney.models import Application, ApplicantProfile, PeerFeedback
 import re
 
 
-from .common import WizardView
+from .common import WizardPageView
 
 
-class FeedbackPage(WizardView):
+class FeedbackPage(WizardPageView):
     """Page where brothers (peers) are selected for receiving feedback."""
 
     page_name = 'feedback'

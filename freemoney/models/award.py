@@ -9,10 +9,27 @@ from django.db.models import (Manager,
                               OneToOneField,
                               SlugField,
                               TextField)
+from freemoney.models import (Semester,)
 
 
-class ScholarshipAwardPickerManager(Manager):
-    """Manager class for ScholarshipAwardPicker (see below)"""
+def get_semester_awards(semester):
+    """Return the ordered list of all award shortnames available.
+
+    The year is ignored. It is assumed that the caller is looking for the list
+    of awards for the current Spring or Fall semester, and not historical data
+    or a forecast regarding past or future semesters.
+    """
+
+    year = semester.date.year
+    if semester == Semester('Spring', year):
+        return ['ean_hong', 'ambassador', 'giff_albright', 'joe_conway',
+                'dan_summers', 'navy_marine', 'excellence', 'pledge']
+    elif semester == Semester('Fall', year):
+        return ['ean_hong', 'excellence', 'pledge']
+
+
+def custom_validate_award(application):
+    """Validate the award selections associated with an Application"""
 
     def create_and_populate(self, application, *args, **kwargs):
         """Create a Picker and all of the necessary ScholarshipAwards"""
@@ -117,19 +134,3 @@ class ScholarshipAward(Model):
     chosen = BooleanField(help_text='Apply for this award?')
 
 
-class ScholarshipAwardPrompt(Model):
-    """Represents the *current* name and description for an award.
-
-    Please note that individual ScholarshipAward records are not tied to this
-    table in any way. Instead, upon creation of an application, the names and
-    descriptions are copied from here into those records. This way, the
-    prompts are "frozen in time," preventing later modifications from altering
-    the context of a historical application.
-
-    A similar approach is taken by the essay models.
-    """
-
-    identifier = SlugField(help_text='Short name for a particular award',
-                           primary_key=True)
-    name = CharField(help_text='Display name for an award', max_length=255)
-    description = TextField(help_text='Full description of the award')

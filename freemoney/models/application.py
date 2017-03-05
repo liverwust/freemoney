@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db.models import (Model,
                               CASCADE,
                               BooleanField,
+                              DateTimeField,
                               DecimalField,
                               ForeignKey,
                               TextField)
@@ -21,7 +22,7 @@ class Application(Model):
     """An applicant's entire response."""
 
     applicant = ForeignKey('ApplicantProfile', on_delete=CASCADE)
-    application_semester = SemesterField()
+    due_at = DateTimeField()
     address = TextField()
     phone = TextField()
     psu_email = TextField()
@@ -30,8 +31,8 @@ class Application(Model):
     outside_pa = BooleanField(default=False)
     semester_initiated = SemesterField(null=True)
     semester_graduating = SemesterField(null=True)
-    cumulative_gpa = DecimalField(null=True)
-    semester_gpa = DecimalField(null=True)
+    cumulative_gpa = DecimalField(null=True, max_digits=3, decimal_places=2)
+    semester_gpa = DecimalField(null=True, max_digits=3, decimal_places=2)
     in_state_tuition = BooleanField(default=False)
     additional_remarks = TextField()
     submitted = BooleanField(default=False)
@@ -105,7 +106,7 @@ class Application(Model):
             issues.create(section=common_section,
                           field='semester_initiated',
                           code='required')
-        elif self.semester_initiated > self.application_semester:
+        elif self.semester_initiated > Semester(self.due_at.date()):
             issues.create(section=common_section,
                           field='semester_initiated',
                           code='invalid')
@@ -114,7 +115,7 @@ class Application(Model):
             issues.create(section=common_section,
                           field='semester_graduating',
                           code='required')
-        elif self.semester_graduating < self.application_semester:
+        elif self.semester_graduating < Semester(self.due_at.date()):
             issues.create(section=common_section,
                           field='semester_graduating',
                           code='invalid')

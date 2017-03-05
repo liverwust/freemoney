@@ -1,9 +1,9 @@
 from django.http import HttpResponse
-from .common import WizardView
+from .common import WizardPageView
 
 
 #TODO: remove this entire class!
-class DummyPage(WizardView):
+class DummyPage(WizardPageView):
     """Dummy to allow testing the wizard w/o a full submission at the end"""
     page_name = 'dummy'
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.validators import ValidationError
@@ -24,7 +25,7 @@ class ApplicationValidationTests(TestCase):
                 )
         self.application = Application.objects.create(
                 applicant=self.applicant,
-                application_semester = Semester('SP10')
+                due_at = datetime(2010, 2, 1)  # SP10
                 )
 
     def attempt_valid_and_invalid_values(self, attr, valids, invalids):

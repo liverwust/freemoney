@@ -1,14 +1,10 @@
-from datetime import datetime, timedelta, timezone
-from django import test
 from django.contrib.auth import get_user_model
-from django.urls import reverse
-from freemoney.models import Application, ApplicantProfile, Semester
-from io import BytesIO
-from lxml import etree
+from django.test import Client, TestCase
+from freemoney.models import (Application,
+                              ApplicantProfile)
 
-
-class CommonWizardViewTestCase(test.TestCase):
-    """Test the basic functionality of a WizardView (mostly thru Welcome)"""
+class TestWelcomePage(TestCase):
+    """Use the welcome page as a means of testing some common functionality"""
 
     def setUp(self):
         self.test_user = get_user_model().objects.create_user(
@@ -17,61 +13,31 @@ class CommonWizardViewTestCase(test.TestCase):
         )
         self.test_profile = ApplicantProfile.objects.create(
                 user=self.test_user,
-                is_first_login=False
+                must_change_password=False
         )
-        self.client.login(username='test@example.com', password='pass1234')
 
-    def test_duplicate_semester_applications(self):
-        """Ensure that a user can only have one active application."""
-        # TODO: need to be able to set this from the test
-        cycle_due_date = datetime(year=2017, month=3, day=17, 
-                                  hour=23, minute=52, second=51,
-                                  tzinfo=timezone.utc)
-        self.client.get(reverse('freemoney:welcome'))
-        dupe_application = Application.objects.create(
-                application_semester=Semester(cycle_due_date),
-                applicant=self.test_profile
-        )
-        # TODO: should NOT check for an exception, but an error page!
-        #response = self.client.get(reverse('freemoney:welcome'))
-        with self.assertRaises(Exception):
-            self.client.get(reverse('freemoney:welcome'))
+    def test_multiple_logins(self):
+        """Test that the same user has the same app across logins"""
 
-    def test_multi_user_semester_apps(self):
-        """*Different* users must be able to have apps in the same semester"""
-        # TODO: need to be able to set this from the test
-        cycle_due_date = datetime(year=2017, month=3, day=17, 
-                                  hour=23, minute=52, second=51,
-                                  tzinfo=timezone.utc)
-        other_user = get_user_model().objects.create_user(
-                username='test2@example.com',
-                password='pass2345'
-        )
-        other_profile = ApplicantProfile.objects.create(
-                user=other_user,
-                is_first_login=False
-        )
-        other_application = Application.objects.create(
-                application_semester=Semester(cycle_due_date),
-                applicant=other_profile
-        )
-        response = self.client.get(reverse('freemoney:welcome'))
-        self.assertIn('application', self.client.session)
+        client_a, client_b = Client(), Client()
+        client_a.login(username='test@example.com', password='pass1234')
+        client_b.login(username='test@example.com', password='pass1234')
+
+        response = client_a.get(reverse('freemoney:welcome'))
         self.assertTemplateUsed(response, 'welcome.html')
+        app_id = client_a.session['application']
 
+        response = client_b.get(reverse('freemoney:welcome'))
+        self.assertTemplateUsed(response, 'welcome.html')
+        self.assertEqual(app_id, client_b.session['application'])
 
-class CommonWizardViewTestCaseNoProfile(test.TestCase):
-    """Similar to the previous TestCase, but without an ApplicantProfile."""
+        response = client_a.post(reverse('freemoney:welcome'),
+                                 data={'submit-type': 'restart'},
+                                 follow=True)
+        self.assertTemplateUsed(response, 'welcome.html')
+        self.assertNotEqual(app_id, client_a.session['application'])
+        app_id = client_a.session['application']
 
-    def setUp(self):
-        test_user = get_user_model().objects.create_user(
-                username='test@example.com',
-                password='pass1234'
-        )
-        # no ApplicantProfile
-        self.client.login(username='test@example.com', password='pass1234')
-
-    def test_having_applicant_profile(self):
-        """Verify that auth'ing isn't enough -- need an ApplicantProfile"""
-        response = self.client.get(reverse('freemoney:welcome'))
-        self.assertTemplateNotUsed(response, 'welcome.html')
+        response = client_b.get(reverse('freemoney:welcome'), follow=True)
+        self.assertTemplateUsed(response, 'welcome.html')
+        self.assertEqual(app_id, client_b.session['application'])
