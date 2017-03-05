@@ -1,10 +1,11 @@
+from .validation  import (CustomValidationIssue,
+                          CustomValidationIssueSet)
 from .semester    import (Semester, SemesterField)
 from .activity    import  Activity
 from .application import  Application
 from .award       import (ScholarshipAward, ScholarshipAwardPrompt)
 from .essay       import (Essay, EssayPrompt)
 from .feedback    import  PeerFeedback
-from .validation  import CustomValidationIssueManager
 
 
 from django.conf  import settings

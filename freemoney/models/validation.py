@@ -1,151 +1,196 @@
-import contextlib
+import collections.abc
 
 
-class CustomValidationIssueManager:
-    """No-nonsense validation "issue" management (not errors / exceptions).
-    
-    An individual error will *always* have a page, field, code, and message
-    associated with it. This alleviates the problem with ValidationError,
-    which often contains bare strings.
+class CustomValidationIssue:
+    """No-nonsense validation "issues" (not errors / exceptions).
 
-    While a message is displayed to the user, a code must be one of several
-    well-known values.
+    An individual issue will *always* have a section, field, and code
+    associated with it. Furthermore, a code must be one of several well-known
+    values. This alleviates the problem with ValidationError, which often
+    contains bare strings.
+
+    A section contains fields and a field contains numbered subfields. All
+    three data are optional but the hierarchy must be maintained: a descriptor
+    can only be given if all of its ancestors are given as well.
+
+    Section and field are strings or None. Subfield is an integer or None.
+    Code is a string which matches a member of CODES (see below).
     """
 
+    # Well-known code values (and the only ones allowed!)
     CODES = ['required',   # information is missing that shouldn't be
              'invalid',    # input is malformed in some way
              'min-length', 'max-length', # too few or too many
              'prohibited'] # a business rule prevents some action
 
-    DONTCARE = '__IGNORE__reserved__'
+    def __init__(self, **kwargs):
+        self.section = kwargs.pop('section', None)
+        self.field = kwargs.pop('field', None)
+        self.subfield = kwargs.pop('subfield', None)
+        self.code = kwargs.pop('code')
+        if len(kwargs) > 0:
+            raise KeyError('illegal / invalid issue data: ' +
+                            ', '.join(kwargs.keys()))
+        elif not (isinstance(self.section, (str, type(None))) and
+                  isinstance(self.field, (str, type(None))) and
+                  isinstance(self.subfield, (int, type(None))) and
+                  isinstance(self.code, str)):
+            raise TypeError('incorrect type or types provided for issue')
+        elif self.code not in CustomValidationIssue.CODES:
+            raise KeyError('unknown code provided: {}'.format(self.code))
+        else:
+            hierarchy_finished = False
+            for level_attr in ['section', 'field', 'subfield']:
+                if getattr(self, level_attr) == None:
+                    hierarchy_finished = True
+                else:
+                    if hierarchy_finished:
+                        raise ValueError('illegal issue hierarchy at ' +
+                                         level_attr)
 
-    class ContextProxy:
-        def __init__(self, host, **kwargs):
-            self._host = host
-            self._kwargs = kwargs
+    def __eq__(self, other):
+        if isinstance(other, CustomValidationIssue):
+            return (self.section == other.section and
+                    self.field == other.field and
+                    self.subfield == other.subfield and
+                    self.code == other.code)
+        else:
+            return False
 
-        def add(self, **kwargs):
-            kwargs.update(self._kwargs)
-            self._host.add(**kwargs)
 
-        def search(self, **kwargs):
-            kwargs.update(self._kwargs)
-            return self._host.search(**kwargs)
+class CustomValidationIssueSet(collections.abc.MutableSet):
+    """Set of CollectionValidationIssues with search and manipulation utils"""
+
+    # see the search function
+    GLOBAL = '__GLOBAL_reserved__'
 
     def __init__(self):
+        # not a set because CustomValidationIssue is not hashable
         self._collection = []
 
-    def add(self, *, page=None, field=None, code=None, message=None):
-        """Append an issue to this manager's collection.
+    def __contains__(self, item):
+        if isinstance(item, CustomValidationIssue):
+            for issue in self._collection:
+                if issue == item:
+                    return True
+        return False
 
-        The code and message must be provided. Any of the following
-        combinations of page and field are allowed:
-          * page='xxxx', field='yyyy': the issue corresponds to a specific
-            field on a specific page
-          * page='xxxx', field=None: the issue applies to a whole page
-          * page=None, field=None: the issue applies to the entire wizard
-        But not this combination, which is meaningless:
-          * page=None, field='yyyy': will result in an exception
+    def __iter__(self, item):
+        return iter(self._collection)
+
+    def __len__(self):
+        return len(self._collection)
+
+    def add(self, new_issue):
+        if isinstance(new_issue, CustomValidationIssue):
+            if new_issue not in self:
+                self._collection.append(new_issue)
+        else:
+            raise TypeError('can only add CustomValidationIssue instances')
+
+    def discard(self, del_issue):
+        for i in range(len(self._collection)):
+            if self._collection[i] == del_issue:
+                del self._collection[i]
+                break
+
+    def create(self, section=None, field=None, subfield=None, code=None):
+        new_issue = CustomValidationIssue(section=section,
+                                          field=field,
+                                          subfield=subfield,
+                                          code=code)
+        self.add(new_issue)
+
+    def search(self, *, section=None,
+                        field=None,
+                        subfield=None,
+                        code=None,
+                        aggregate=False):
+        """Search issues, returning a new set with those matching the critera.
+
+        The default value for the filter arguments is None, which matches any
+        value. This is different than the constructor's behavior, which treats
+        None as a "global" specifier for section, field, or subfield. To match
+        a literal None, pass the value of the special attribute GLOBAL.
+        
+        When either None or GLOBAL values are used, the usual hierarchy rules
+        apply (e.g., no meaningless searches for subfield without field).
+
+        If the specification of section, field, and subfield will only match
+        one target, you can pass aggregate=True to get a simple list of codes
+        rather than a new CustomValidationIssueSet. Note: if more than one
+        target was matched after all, an exception will be raised.
         """
 
-        if not (isinstance(page, (str, type(None))) and
+        if not (isinstance(section, (str, type(None))) and
                 isinstance(field, (str, type(None))) and
-                isinstance(code, str) and
-                isinstance(message, str)):
+                isinstance(subfield, (int, str, type(None))) and
+                isinstance(code, (str, type(None)))):
             raise TypeError('incorrect type or types provided for issue')
-        elif page == None and field != None:
-            raise ValueError('meaningless combination: field w/o a page')
-        elif code not in CustomValidationIssueManager.CODES:
-            raise ValueError('unknown code provided: {}'.format(code))
+        elif (isinstance(subfield, str) and
+              subfield != CustomValidationIssueSet.GLOBAL):
+            raise TypeError('subfield must be integer, None, or GLOBAL')
+        elif (isinstance(code, str) and
+              code not in CustomValidationIssue.CODES):
+            raise KeyError('unknown code provided: {}'.format(code))
         else:
-            # Collapse multiple issues into a sub-collection, if necessary
-            existing = self.search(page=page, field=field)
-            if len(existing) == 0:
-                self._collection.append((page, field, code, message))
-            elif len(existing) == 1:
-                for i in range(len(self._collection)):
-                    other = self._collection[i]
-                    o_page, o_field, o_code, o_message = other
-                    if o_page == page and o_field == field:
-                        if (isinstance(o_code, str) and
-                            isinstance(o_message, str)):
-                            new_codes = [o_code, code]
-                            new_messages = [o_message, message]
-                        else:
-                            new_codes = list(o_code)
-                            new_codes.append(code)
-                            new_messages = list(o_message)
-                            new_messages.append(message)
-                        self._collection[i] = (page, field, new_codes,
-                                               new_messages)
-                        break
-            else:
-                raise RuntimeError('internal logic problem; abort!')
+            hierarchy = [('section', section),
+                         ('field', field),
+                         ('subfield', subfield)]
+            # None is broader than GLOBAL, and GLOBAL is broader than specific
+            had_none, had_global = False, False
+            for level, value in hierarchy:
+                if value is None:
+                    had_none = True
+                elif value == CustomValidationIssueSet.GLOBAL:
+                    if had_none:
+                        raise ValueError('illegal issue hierarchy at '+level)
+                    had_global = True
+                else:
+                    if had_none or had_global:
+                        raise ValueError('illegal issue hierarchy at '+level)
 
-    def search(self, *, page=DONTCARE, field=DONTCARE,
-                        code=DONTCARE, expand=False):
-        """Search for issues which match the given critera.
-
-        Please note that None is a meaningful value, at least in the context
-        of the page and field arguments. To indicate that a particular
-        argument should not restrict the results, pass DONTCARE (the default).
-
-        You cannot search on a message -- it is supposed to be freeform. Use
-        the code instead.
-
-        Pass expand=True to return a separate tuple for every individual
-        page/field combination, rather than a single combined tuple for each
-        such combination.
-        """
-
-        matches = []
-        for issue in self._collection:
-            if (page != CustomValidationIssueManager.DONTCARE and
-                page != issue[0]):
-                continue
-            if (field != CustomValidationIssueManager.DONTCARE and
-                field != issue[1]):
-                continue
-            if (code != CustomValidationIssueManager.DONTCARE and
-                code != issue[2]):
-                continue
-
-            if not expand or (isinstance(issue[2], str) and
-                              isinstance(issue[3], str)):
+            matches = []
+            for issue in self._collection:
+                if section is not None:
+                    if section == CustomValidationIssueSet.GLOBAL:
+                        if None != issue.section:
+                            continue
+                    else:
+                        if section != issue.section:
+                            continue
+                if field is not None:
+                    if field == CustomValidationIssueSet.GLOBAL:
+                        if None != issue.field:
+                            continue
+                    else:
+                        if field != issue.field:
+                            continue
+                if subfield is not None:
+                    if subfield == CustomValidationIssueSet.GLOBAL:
+                        if None != issue.subfield:
+                            continue
+                    else:
+                        if subfield != issue.subfield:
+                            continue
+                if code is not None and code != issue.code:
+                    continue
                 matches.append(issue)
+
+            if aggregate:
+                aggregate_specification = None
+                for issue in matches:
+                    if aggregate_specification == None:
+                        aggregate_specification = (issue.section,
+                                                   issue.field,
+                                                   issue.subfield)
+                    elif (aggregate_specification[0] != issue.section or
+                          aggregate_specification[1] != issue.field or
+                          aggregate_specification[2] != issue.subfield):
+                        raise ValueError('aggregate spans multiple issues')
+                return [issue.code for issue in matches]
             else:
-                for code, message in zip(issue[2], issue[3]):
-                    matches.append((issue[0], issue[1], code, message))
-        return matches
-
-    def for_page(self, page, include_generic=True):
-        """Returns issues affecting a given page, maybe plus page=None."""
-
-        if page == CustomValidationIssueManager.DONTCARE:
-            raise ValueError('use DONTCARE with search, not with on_page')
-        else:
-            matches = self.search(page=page)
-            if page != None and include_generic:
-                generic_matches = self.search(page=None, field=None)
-                # there will never be any intersection / overlap between
-                # page=page and page=None (assuming page != None), so just go
-                # ahead and extend
-                matches.extend(generic_matches)
-            return matches
-
-    @contextlib.contextmanager
-    def context(self, *, page=DONTCARE, field=DONTCARE, code=DONTCARE):
-        """Restrict (inside a with-block) add and search operations.
-
-        This context manager yields a proxy object upon which .add and .search
-        operations are limited by the provided criteria, but otherwise act as
-        if they directly call the manager functions described above.
-
-        As with .search(), there is no message argument provided here.
-        """
-
-        kwargs = {'page': page, 'field': field, 'code': code}
-        for key in list(kwargs.keys()):
-            if kwargs[key] == CustomValidationIssueManager.DONTCARE:
-                del kwargs[key]
-        yield CustomValidationIssueManager.ContextProxy(self, **kwargs)
+                newset = CustomValidationIssueSet()
+                for issue in matches:
+                    newset.add(issue)
+                return newset
