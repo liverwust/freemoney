@@ -75,7 +75,7 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
                     return True
         return False
 
-    def __iter__(self, item):
+    def __iter__(self):
         return iter(self._collection)
 
     def __len__(self):
@@ -112,7 +112,7 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
         value. This is different than the constructor's behavior, which treats
         None as a "global" specifier for section, field, or subfield. To match
         a literal None, pass the value of the special attribute GLOBAL.
-        
+
         When either None or GLOBAL values are used, the usual hierarchy rules
         apply (e.g., no meaningless searches for subfield without field).
 

@@ -4,6 +4,8 @@ from django.core.validators import ValidationError
 from django.test import TestCase
 from freemoney.models import (Application,
                               ApplicantProfile,
+                              CustomValidationIssue,
+                              CustomValidationIssueSet,
                               ScholarshipAward,
                               PeerFeedback,
                               Semester)
@@ -15,28 +17,39 @@ class ApplicationValidationTests(TestCase):
     def setUp(self):
         self.applicant = ApplicantProfile.objects.create(
                 user=get_user_model().objects.create_user(
-                        username='test@example.com',
-                        password='pass1234'
-                ),
+                    username='test@example.com',
+                    password='pass1234'
+                    ),
                 is_first_login=False
-        )
+                )
         self.application = Application.objects.create(
                 applicant=self.applicant,
                 application_semester = Semester('SP10')
-        )
+                )
 
     def attempt_valid_and_invalid_values(self, attr, valids, invalids):
         consolidated = (list(zip(valids,   [True]  * len(valids))) +
-                        list(zip(invalids, [False] * len(invalids))))
-        for attempt, is_valid in consolidated:
-            try:
-                setattr(self.application, attr, attempt)
-                self.application.full_clean()
-            except ValidationError as exc:
-                if is_valid:
-                    self.assertNotIn(attr, exc.message_dict)
-                else:
-                    self.assertIn(attr, exc.message_dict)
+                list(zip(invalids, [False] * len(invalids))))
+        for attempt, should_be_valid in consolidated:
+            setattr(self.application, attr, attempt)
+            issues = CustomValidationIssueSet()
+            self.application.custom_validate(issues)
+            is_actually_valid = True
+            for issue in issues:
+                if (issue.section == 'basicinfo' and
+                    issue.field == attr):
+                    is_actually_valid = False
+                    break
+            self.assertEqual(should_be_valid, is_actually_valid)
+
+    def test_save_without_finishing(self):
+        with self.assertRaises(ValueError) as cm:
+            self.application.submitted = True
+            self.application.save()
+        # this is a sufficiently important check to justify duplicating the
+        # exception's message here
+        self.assertEqual(str(cm.exception),
+                         'cannot submit Application with issues!')
 
     def test_phone_number(self):
         self.attempt_valid_and_invalid_values('phone',
@@ -46,8 +59,8 @@ class ApplicationValidationTests(TestCase):
 
     def test_psu_email(self):
         self.attempt_valid_and_invalid_values('psu_email',
-                valids=('test@psu.edu'),
-                invalids=('test@gmail.com')
+                valids=('test@psu.edu',),
+                invalids=('test@gmail.com',)
         )
 
     def test_psu_id(self):

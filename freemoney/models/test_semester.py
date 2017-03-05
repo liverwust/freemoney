@@ -81,3 +81,11 @@ class SemesterTestCase(TestCase):
         """Check that an invalid date (e.g., during Summer 2017) fails"""
         with self.assertRaises(ValueError):
             Semester(datetime.date(2017, 6, 30))
+
+    def test_fall_spring_ordering(self):
+        """Check that the order of semesters is generally correct"""
+        self.assertLess(Semester('Spring 2009'), Semester('Fall 2009'))
+        self.assertLess(Semester('Fall 2009'), Semester('Spring 2010'))
+        self.assertLess(Semester('Spring 2010'), Semester('FA10'))
+        self.assertLess(Semester('FA10'), Semester(('Fall', 2011)))
+        self.assertLess(Semester(('Fall', 2011)), Semester('Spring 2013'))

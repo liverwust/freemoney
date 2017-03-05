@@ -8,7 +8,7 @@ import re
 @functools.total_ordering
 class Semester:
     """Represents the pairing of a semester and a year.
-    
+
     A Semester object is immutable. It can be compared to other Semesters.
 
     The constructor accepts all of the following:
