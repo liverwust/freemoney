@@ -9,13 +9,16 @@ from .feedback    import  PeerFeedback
 
 
 from django.conf  import settings
-import django.db.models as _ddb_models
+import django.db.models as _dmodels
 
 
-class ApplicantProfile(_ddb_models.Model):
+class ApplicantProfile(_dmodels.Model):
     """Extra user profile info for a potential applicant's account"""
 
-    user = _ddb_models.OneToOneField(settings.AUTH_USER_MODEL,
-                                     on_delete=_ddb_models.CASCADE,
+    user = _dmodels.OneToOneField(settings.AUTH_USER_MODEL,
+                                     on_delete=_dmodels.CASCADE,
                                      primary_key=True)
-    must_change_password = _ddb_models.BooleanField(default=False)
+    current_application = _dmodels.ForeignKey(Application,
+                                              on_delete=_dmodels.SET_NULL,
+                                              null=True)
+    must_change_password = _dmodels.BooleanField(default=False)
