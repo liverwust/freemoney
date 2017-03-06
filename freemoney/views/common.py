@@ -1,4 +1,8 @@
-from django.contrib import messages
+from django.conf import settings
+from django.contrib.messages import (add_message,
+                                     get_messages,
+                                     INFO,
+                                     ERROR)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.forms import Form, BaseFormSet
@@ -74,11 +78,6 @@ class WizardPageView(LoginRequiredMixin, View):
         if self._page_index == None:
             raise KeyError('invalid page name: {}'.format(page_name))
 
-        self._form_class = getattr(type(self), 'form_class', None)
-        if not (self._form_class is None or
-                issubclass(self._form_class, (Form, BaseFormSet))):
-            raise TypeError('bad form_class for WizardPageView subclass')
-
         self.request = request
 
         try:
@@ -106,9 +105,9 @@ class WizardPageView(LoginRequiredMixin, View):
             elif preceding_class.progress_sentry(self.issues):
                 preceding_class = getattr(preceding_class, 'prev_page', None)
             else:
-                messages.add_message(self.request, messages.ERROR,
-                                        'Please complete this section first')
-                return redirect(_url_of(preceding_class.page_name))
+                add_message(self.request, ERROR,
+                            'Please complete this section first')
+                return redirect(_uri_of(preceding_class.page_name))
 
     def _generate_base_context(self):
         base_context = {
@@ -117,13 +116,14 @@ class WizardPageView(LoginRequiredMixin, View):
                 'buttons': [x[0] for x in self._calculate_valid_buttons()],
         }
         for short_name, long_name in WizardPageView.PAGES:
-            is_active = (short_name == self._page_name)
+            is_active = (short_name == type(self).page_name)
             base_context['steps'].append((long_name, is_active))
 
         base_context['errors'] = []
-        for message in messages.get_messages():
-            if message.level == message.ERROR:
+        for message in get_messages(self.request):
+            if message.level == ERROR:
                 base_context['errors'].append(message.message)
+        return base_context
 
     def _uri_of(self, name):
         return reverse('freemoney:{}'.format(name))
@@ -150,7 +150,7 @@ class WizardPageView(LoginRequiredMixin, View):
             if error_response is not None:
                 return error_response
 
-        form = self._prepopulate_form()
+        self.form = self.prepopulate_form()
 
         already_added_issues = False
         base_context = self._generate_base_context()
@@ -159,6 +159,7 @@ class WizardPageView(LoginRequiredMixin, View):
             self.add_issues_to_form()
 
         self.context = base_context
+        self.context['form'] = self.form
         self.finalize_context()
 
         return render(self.request,
@@ -175,9 +176,10 @@ class WizardPageView(LoginRequiredMixin, View):
             if error_response is not None:
                 return error_response
 
-        self._parse_form()
-        if self.form.is_valid():
-            self.save_changes()
+        self.form = self.parse_form()
+        if self.form is None or self.form.is_valid():
+            if self.form is not None:
+                self.save_changes()
 
             self.issues = CustomValidationIssueSet()
             self.application.custom_validate(self.issues)
@@ -190,28 +192,29 @@ class WizardPageView(LoginRequiredMixin, View):
                         applicant=self.applicant
                 )
                 self.applicant.current_application = self.application
-                messages.add_message(self.request, messages.INFO,
-                                    'Application was successfully restarted')
-                return redirect(self._url_to(WizardPageView.PAGES[0][0]))
+                add_message(self.request, INFO,
+                            'Application was successfully restarted')
+                return redirect(self._uri_of(WizardPageView.PAGES[0][0]))
             elif submit_type == 'prev':
                 prev_page = WizardPageView.PAGES[self._page_index - 1]
-                return redirect(self._url_to(prev_page[0]))
+                return redirect(self._uri_of(prev_page[0]))
             elif submit_type == 'next':
-                if self.progress_sentry(self.issues):
+                if (not hasattr(type(self), 'progress_sentry') or
+                    self.progress_sentry(self.issues)):
                     next_page = WizardPageView.PAGES[self._page_index + 1]
-                    return redirect(self._url_of(next_page[0]))
+                    return redirect(self._uri_of(next_page[0]))
             elif submit_type == 'submit':
                 self.application.submitted = True
                 self.application.save()
                 # TODO: go to a "finished" page
                 return server_error(self.request)
 
-        if not already_added_issues:
-            self._add_issues_to_form()
+        self.add_issues_to_form()
         self.context = self._generate_base_context()
         self.context['errors'].append(
                 'Please fix form errors below before proceeding'
         )
+        self.context['form'] = self.form
         self.finalize_context()
         return render(self.request,
                     self.page_name + '.html',

@@ -3,7 +3,7 @@ from .validation  import (CustomValidationIssue,
 from .semester    import (Semester, SemesterField)
 from .activity    import  Activity
 from .application import  Application
-from .award       import (ScholarshipAward, ScholarshipAwardPrompt)
+from .award       import  Award
 from .essay       import (Essay, EssayPrompt)
 from .feedback    import  PeerFeedback
 

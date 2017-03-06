@@ -57,6 +57,9 @@ class CustomValidationIssue:
         else:
             return False
 
+    def __str__(self):
+        return str((self.section, self.field, self.subfield, self.code))
+
 
 class CustomValidationIssueSet(collections.abc.MutableSet):
     """Set of CollectionValidationIssues with search and manipulation utils"""
@@ -105,7 +108,8 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
                         field=None,
                         subfield=None,
                         code=None,
-                        aggregate=False):
+                        aggregate=False,
+                        discard=False):
         """Search issues, returning a new set with those matching the critera.
 
         The default value for the filter arguments is None, which matches any
@@ -120,6 +124,9 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
         one target, you can pass aggregate=True to get a simple list of codes
         rather than a new CustomValidationIssueSet. Note: if more than one
         target was matched after all, an exception will be raised.
+
+        If the discard=True flag is passed, any returned Issues will be
+        deleted from the Set.
         """
 
         if not (isinstance(section, (str, type(None))) and
@@ -151,7 +158,9 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
                         raise ValueError('illegal issue hierarchy at '+level)
 
             matches = []
+            new_collection = []
             for issue in self._collection:
+                new_collection.append(issue)
                 if section is not None:
                     if section == CustomValidationIssueSet.GLOBAL:
                         if None != issue.section:
@@ -176,6 +185,9 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
                 if code is not None and code != issue.code:
                     continue
                 matches.append(issue)
+                if discard:
+                    new_collection.pop()
+            self._collection = new_collection
 
             if aggregate:
                 aggregate_specification = None

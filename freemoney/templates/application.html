@@ -49,18 +49,14 @@
       {% bootstrap_messages %}
 
       <ul class="nav nav-pills">
-        {% for long_name, uri, is_active, is_enabled in steps %}
-          {% if not is_enabled %}
-            <li role="presentation" class="disabled">
-              <a href="#">{{ long_name }}</a>
-            </li>
-          {% elif is_active %}
+        {% for long_name, is_active in steps %}
+          {% if is_active %}
             <li role="presentation" class="active">
-              <a href="{{ uri }}">{{ long_name }}</a>
+              <a href="#">{{ long_name }}</a>
             </li>
           {% else %}
             <li role="presentation">
-              <a href="{{ uri }}">{{ long_name }}</a>
+              <a href="#">{{ long_name }}</a>
             </li>
           {% endif %}
         {% endfor %}

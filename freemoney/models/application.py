@@ -10,6 +10,7 @@ from django.db.models import (Model,
                               DecimalField,
                               ForeignKey,
                               TextField)
+import freemoney.models
 from freemoney.models import (CustomValidationIssue,
                               CustomValidationIssueSet,
                               Semester,
@@ -23,18 +24,24 @@ class Application(Model):
 
     applicant = ForeignKey('ApplicantProfile', on_delete=CASCADE)
     due_at = DateTimeField()
-    address = TextField()
-    phone = TextField()
-    psu_email = TextField()
-    preferred_email = TextField()
-    psu_id = TextField()
+    address = TextField(blank=True)
+    phone = TextField(blank=True)
+    psu_email = TextField(blank=True)
+    preferred_email = TextField(blank=True)
+    psu_id = TextField(blank=True)
     outside_pa = BooleanField(default=False)
-    semester_initiated = SemesterField(null=True)
-    semester_graduating = SemesterField(null=True)
-    cumulative_gpa = DecimalField(null=True, max_digits=3, decimal_places=2)
-    semester_gpa = DecimalField(null=True, max_digits=3, decimal_places=2)
+    semester_initiated = SemesterField(null=True, blank=True)
+    semester_graduating = SemesterField(null=True, blank=True)
+    cumulative_gpa = DecimalField(null=True,
+                                  blank=True,
+                                  max_digits=3,
+                                  decimal_places=2)
+    semester_gpa = DecimalField(null=True,
+                                blank=True,
+                                max_digits=3,
+                                decimal_places=2)
     in_state_tuition = BooleanField(default=False)
-    additional_remarks = TextField()
+    additional_remarks = TextField(blank=True)
     submitted = BooleanField(default=False)
 
     def save(self, *args, **kwargs):
@@ -153,9 +160,9 @@ class Application(Model):
             raise TypeError('need a CustomValidationIssueSet')
 
         self._custom_validate_fields(issues)
+        award_manager = freemoney.models.Award.objects
+        award_manager.custom_validate_for_application(self, issues)
 
-        # TODO: reinstate subordinate model checks
-#        if self.scholarshipaward_set.all() < 1:
-#            issues.create(section='award', code='min-length')
+#TODO: reinstate
 #        if self.peerfeedback_set.count() < settings.FREEMONEY_MIN_FEEDBACK:
 #            issues.create(section='feedback', code='min-length')
