@@ -2,30 +2,5 @@
 {% load bootstrap3 %}
 
 {% block content %}
-<div class="row">
-  <div class="col-md-12">&nbsp;</div>
-</div>
-{{ formset.management_form }}
-{% for metadata in peer_metadata %}
-  <div class="row">
-    <div class="col-md-12">
-      {% if metadata.expanded %}
-        <button type="button" data-toggle="button" aria-pressed="true" class="btn btn-selector active feedbackbutton">
-          Provide feedback for {{ metadata.peer_name }}
-        </button>
-      {% else %}
-        <button type="button" data-toggle="button" aria-pressed="false" class="btn btn-selector feedbackbutton">
-          Provide feedback for {{ metadata.peer_name }}
-        </button>
-      {% endif %}
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-12">
-      <div class="collapse.in" id="{{ metadata.collapse_id }}">
-        {% bootstrap_form metadata.form %}
-      </div>
-    </div>
-  </div>
-{% endfor %}
+{% bootstrap_formset form %}
 {% endblock %}

@@ -107,7 +107,7 @@ class WizardPageView(LoginRequiredMixin, View):
             else:
                 add_message(self.request, ERROR,
                             'Please complete this section first')
-                return redirect(_uri_of(preceding_class.page_name))
+                return redirect(self._uri_of(preceding_class.page_name))
 
     def _generate_base_context(self):
         base_context = {
@@ -192,6 +192,8 @@ class WizardPageView(LoginRequiredMixin, View):
                         applicant=self.applicant
                 )
                 self.applicant.current_application = self.application
+                self.applicant.full_clean()
+                self.applicant.save()
                 add_message(self.request, INFO,
                             'Application was successfully restarted')
                 return redirect(self._uri_of(WizardPageView.PAGES[0][0]))

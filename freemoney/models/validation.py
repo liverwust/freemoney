@@ -14,7 +14,9 @@ class CustomValidationIssue:
     can only be given if all of its ancestors are given as well.
 
     Section and field are strings or None. Subfield is an integer or None.
-    Code is a string which matches a member of CODES (see below).
+    Code is a string which matches a member of CODES (see below). The extra
+    field 'extra' can be any value with meaning for the code. Please note: two
+    Issues are the same even if their extra values differ!
     """
 
     # Well-known code values (and the only ones allowed!)
@@ -28,6 +30,7 @@ class CustomValidationIssue:
         self.field = kwargs.pop('field', None)
         self.subfield = kwargs.pop('subfield', None)
         self.code = kwargs.pop('code')
+        self.extra = kwargs.pop('extra', None)
         if len(kwargs) > 0:
             raise KeyError('illegal / invalid issue data: ' +
                             ', '.join(kwargs.keys()))
@@ -58,7 +61,8 @@ class CustomValidationIssue:
             return False
 
     def __str__(self):
-        return str((self.section, self.field, self.subfield, self.code))
+        return str((self.section, self.field, self.subfield,
+                    self.code, self.extra))
 
 
 class CustomValidationIssueSet(collections.abc.MutableSet):
@@ -97,11 +101,13 @@ class CustomValidationIssueSet(collections.abc.MutableSet):
                 del self._collection[i]
                 break
 
-    def create(self, section=None, field=None, subfield=None, code=None):
+    def create(self, section=None, field=None, subfield=None,
+                     code=None, extra=None):
         new_issue = CustomValidationIssue(section=section,
                                           field=field,
                                           subfield=subfield,
-                                          code=code)
+                                          code=code,
+                                          extra=extra)
         self.add(new_issue)
 
     def search(self, *, section=None,

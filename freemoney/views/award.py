@@ -21,6 +21,13 @@ class AwardPage(WizardPageView):
     page_name = 'award'
     prev_page = WelcomePage
 
+    @staticmethod
+    def progress_sentry(issues):
+        if len(issues.search(section='award')) > 0:
+            return False
+        else:
+            return True
+
     def prepopulate_form(self):
         initial_data = []
         selected_awards = self.application.award_set.all()
@@ -55,6 +62,8 @@ class AwardPage(WizardPageView):
         if (len(self.issues.search(section='award',
                                    code='min-length',
                                    discard=True)) > 0):
+            if self.form._non_form_errors == None:
+                self.form._non_form_errors = []
             self.form._non_form_errors.append(
                     'Must choose at least one scholarship award'
             )
@@ -75,6 +84,8 @@ class AwardPage(WizardPageView):
                     'Graduating seniors can only apply for the Hong'
             )
         for issue in self.issues.search(section='award', discard=True):
+            if self.form._non_form_errors == None:
+                self.form._non_form_errors = []
             self.form._non_form_errors.append(str(issue))
 
 

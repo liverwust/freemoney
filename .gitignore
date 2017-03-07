@@ -5,7 +5,6 @@
 /lib64
 /pip-selfcheck.json
 /pyvenv.cfg
-/selenium
 
 # Local sqlite database(s)
 /*.db

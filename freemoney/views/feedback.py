@@ -1,100 +1,104 @@
-from collections import namedtuple
-from django import forms
-from django.shortcuts import render
-from django.views.defaults import server_error
-from freemoney.models import Application, ApplicantProfile, PeerFeedback
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.forms import (CharField,
+                          Form,
+                          formset_factory,
+                          HiddenInput,
+                          IntegerField,
+                          Textarea)
+from freemoney.models import (Application,
+                              ApplicantProfile,
+                              Feedback)
 import re
 
 
 from .common import WizardPageView
+from .award import AwardPage
 
 
 class FeedbackPage(WizardPageView):
     """Page where brothers (peers) are selected for receiving feedback."""
 
     page_name = 'feedback'
-    required_fields = ['scholarshipaward_set']
+    prev_page = AwardPage
 
-    def render_page(self, context):
-        existing_responses = list(self.application.peerfeedback_set.all())
-        peer_metadata = []
-        #TODO: fix ordering
-        #for peer in PeerProfile.objects.order_by('display_name').iterator():
-        for peer in ApplicantProfile.objects.iterator():
-            if (peer.user != self.request.user and
-                True):   # TODO: compare semester against "current" semester
-                feedback = ""
-                for response in existing_responses:
-                    if response.peer == peer:
-                        feedback = response.feedback
+    @staticmethod
+    def progress_sentry(issues):
+        if len(issues.search(section='feedback')) > 0:
+            return False
+        else:
+            return True
+
+    def prepopulate_form(self):
+        initial_data = []
+        existing_feedbacks = Feedback.objects.filter(
+                application=self.application
+        ).all()
+        for peer in Feedback.objects.get_eligible_peers():
+            if peer != self.applicant:
+                new_data = {'peer_id': peer.pk,
+                            'peer_name': '{} {}'.format(peer.user.first_name,
+                                                        peer.user.last_name)}
+                for feedback in existing_feedbacks:
+                    if feedback.peer == peer:
+                        new_data['feedback'] = feedback.feedback
                         break
-                peer_metadata.append({'peer_id': peer.pk,
-                                    # TODO: use display name
-                                    'peer_name': peer.user.username,
-                                    'feedback': feedback,
-                                    'expanded': (feedback != ""),
-                                    'collapse_id': 'collapse_'+str(peer.pk)})
-        peer_data = []
-        for metadata in peer_metadata:
-            peer_data.append({'peer_id': metadata['peer_id'],
-                              'feedback': metadata['feedback']})
-        context['formset'] = MultiplePeerFeedbackForm(initial=peer_data)
-        context['peer_metadata'] = []
-        for metadata, form in zip(peer_metadata, context['formset']):
-            context['peer_metadata'].append(SinglePeerFeedbackMetadata(
-                    form=form,
-                    peer_name=metadata['peer_name'],
-                    expanded=metadata['expanded'],
-                    collapse_id=metadata['collapse_id']
-            ))
-        return render(self.request, 'feedback.html', context=context)
+                if 'feedback' not in new_data:
+                    new_data['feedback'] = ''
+                initial_data.append(new_data)
+        return FeedbackFormSet(initial=initial_data)
+
+    def parse_form(self):
+        return FeedbackFormSet(self.request.POST)
 
     def save_changes(self):
-        formset = MultiplePeerFeedbackForm(self.request.POST)
-        if not formset.is_valid():
-            # TODO: error handling here
-            return server_error(self.request)
-        existing_responses = list(self.application.peerfeedback_set.all())
+        existing_feedbacks = Feedback.objects.filter(
+                application=self.application
+        ).all()
         existing_by_peer = {}
-        for response in existing_responses:
-            existing_by_peer[response.peer.pk] = response
-        for form in formset:
-            if int(form.cleaned_data['peer_id']) in existing_by_peer:
-                response = existing_by_peer[form.cleaned_data['peer_id']]
-                if re.match(r'^\s*$', form.cleaned_data['feedback']):
-                    response.delete()
+        for feedback in existing_feedbacks:
+            existing_by_peer[feedback.peer.pk] = feedback
+
+        for individual in self.form:
+            peer_id = individual.cleaned_data['peer_id']
+            if peer_id != self.applicant.pk:
+                if peer_id in existing_by_peer:
+                    feedback = existing_by_peer[peer_id]
+                    if re.match(r'^\s*$', individual.cleaned_data['feedback']):
+                        feedback.delete()
+                    else:
+                        feedback.feedback = individual.cleaned_data['feedback']
+                        feedback.full_clean()
+                        feedback.save()
                 else:
-                    response.feedback = form.cleaned_data['feedback']
-                    response.full_clean()
-                    response.save()
-            else:
-                new_response = PeerFeedback.objects.create(
-                        peer=ApplicantProfile.objects.get(
-                                pk=form.cleaned_data['peer_id']
-                        ),
-                        feedback=form.cleaned_data['feedback'],
-                        application=self.application
-                )
-        # success; proceed as usual to the next/previous/whatever step
-        return None
+                    if re.match(r'^\s*$', individual.cleaned_data['feedback']):
+                        pass
+                    else:
+                        new_feedback = Feedback.objects.create(
+                                peer=ApplicantProfile.objects.get(pk=peer_id),
+                                feedback=individual.cleaned_data['feedback'],
+                                application=self.application
+                        )
+
+    def add_issues_to_form(self):
+        if (len(self.issues.search(section='feedback',
+                                   code='min-length',
+                                   discard=True)) > 0):
+            self.form._non_form_errors.append(
+                    'Must provide at least {} reviews'.format(
+                            settings.FREEMONEY_MIN_FEEDBACK_COUNT
+                    )
+            )
+        for issue in self.issues.search(section='award', discard=True):
+            self.form._non_form_errors.append(str(issue))
 
 
-class SinglePeerFeedbackForm(forms.Form):
+class FeedbackForm(Form):
     """Enables providing feedback for a single brother."""
-    peer_id = forms.IntegerField(widget=forms.HiddenInput)
-    feedback = forms.CharField(label="",
-                               required=False,
-                               widget=forms.Textarea(attrs={
-                                    'rows': '3'
-                               }))
+
+    peer_id = IntegerField(widget=HiddenInput)
+    peer_name = CharField()
+    feedback = CharField(required=False, widget=Textarea)
 
 
-SinglePeerFeedbackMetadata = namedtuple('SinglePeerFeedbackMetadata', [
-    'form', 'peer_name', 'expanded', 'collapse_id'
-])
-
-
-MultiplePeerFeedbackForm = forms.formset_factory(
-        SinglePeerFeedbackForm,
-        extra=0
-)
+FeedbackFormSet = formset_factory(FeedbackForm, extra=0)

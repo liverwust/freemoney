@@ -117,6 +117,5 @@ STATIC_URL = '/static/'
 
 
 # Freemoney-specific configuration
-FREEMONEY_MIN_FEEDBACK = 3   # min # of feedback responses
-FREEMONEY_CURRENT_SEMESTER = "SP17"   # see Semester model for format info
+FREEMONEY_MIN_FEEDBACK_COUNT = 3   # min # of feedback responses
 FREEMONEY_DUE_DATE = date(2017, 4, 9) # 11:59:59 PM EST on this date

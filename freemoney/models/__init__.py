@@ -5,7 +5,7 @@ from .activity    import  Activity
 from .application import  Application
 from .award       import  Award
 from .essay       import (Essay, EssayPrompt)
-from .feedback    import  PeerFeedback
+from .feedback    import  Feedback
 
 
 from django.conf  import settings

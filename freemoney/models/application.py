@@ -160,9 +160,7 @@ class Application(Model):
             raise TypeError('need a CustomValidationIssueSet')
 
         self._custom_validate_fields(issues)
-        award_manager = freemoney.models.Award.objects
-        award_manager.custom_validate_for_application(self, issues)
-
-#TODO: reinstate
-#        if self.peerfeedback_set.count() < settings.FREEMONEY_MIN_FEEDBACK:
-#            issues.create(section='feedback', code='min-length')
+        section_managers = [freemoney.models.Award.objects,
+                            freemoney.models.Feedback.objects]
+        for section_manager in section_managers:
+            section_manager.custom_validate_for_application(self, issues)
