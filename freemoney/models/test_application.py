@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.validators import ValidationError
@@ -7,13 +7,12 @@ from freemoney.models import (Application,
                               ApplicantProfile,
                               CustomValidationIssue,
                               CustomValidationIssueSet,
-                              ScholarshipAward,
-                              PeerFeedback,
+                              Feedback,
                               Semester)
 
 
 class ApplicationValidationTests(TestCase):
-    """Test the validation of Application model fields."""
+    """Test the validation of Application model fields"""
 
     def setUp(self):
         self.applicant = ApplicantProfile.objects.create(
@@ -21,12 +20,12 @@ class ApplicationValidationTests(TestCase):
                     username='test@example.com',
                     password='pass1234'
                     ),
-                is_first_login=False
-                )
+                must_change_password=False
+        )
         self.application = Application.objects.create(
                 applicant=self.applicant,
-                due_at = datetime(2010, 2, 1)  # SP10
-                )
+                due_at = datetime(2010, 2, 1, tzinfo=timezone.utc)  # SP10
+        )
 
     def attempt_valid_and_invalid_values(self, attr, valids, invalids):
         consolidated = (list(zip(valids,   [True]  * len(valids))) +
@@ -52,6 +51,12 @@ class ApplicationValidationTests(TestCase):
         self.assertEqual(str(cm.exception),
                          'cannot submit Application with issues!')
 
+    def test_address(self):
+        self.attempt_valid_and_invalid_values('address',
+                valids=('test address',),
+                invalids=('',)
+        )
+
     def test_phone_number(self):
         self.attempt_valid_and_invalid_values('phone',
                 valids=('609-412-4321', '1 (800) 234 1234'),
@@ -61,7 +66,13 @@ class ApplicationValidationTests(TestCase):
     def test_psu_email(self):
         self.attempt_valid_and_invalid_values('psu_email',
                 valids=('test@psu.edu',),
-                invalids=('test@gmail.com',)
+                invalids=('test@gmail.com', 'notanemail')
+        )
+
+    def test_preferred_email(self):
+        self.attempt_valid_and_invalid_values('preferred_email',
+                valids=('test@psu.edu', 'test@gmail.com'),
+                invalids=('notanemail',)
         )
 
     def test_psu_id(self):

@@ -11,24 +11,36 @@ import freemoney.models
 class FeedbackManager(Manager):
     """Manager class for the Feedback model (see below)"""
 
+    @staticmethod
+    def _gen_padded_keyfunc(max_lastname_len):
+        """Convert John Smith to "smith   john" for direct comparison"""
+
+        return _inner_keyfunc
+
     def get_eligible_peers(self):
         """Get a list of all ApplicantProfiles which can be reviewed"""
 
-        users_with_profiles = get_user_model().objects.exclude(
-                applicantprofile=None
-        ).order_by(
-                'last_name', 'first_name'
-        ).all()
+        profiles = freemoney.models.ApplicantProfile.objects.active_profiles()
 
-        return [u.applicantprofile for u in users_with_profiles]
+        # Convert "John Smith" to "SmithJohn" and then add padding so that the
+        # last name is as long as the longest last name, "Smith     John"
+        # (this allows for direct key-based comparison between names)
+        max_lastname_len = max([len(p.user.last_name) for p in profiles])
+        def _parameterized_keyfunc(p):
+            return (p.user.last_name +
+                    " " * (max_lastname_len - len(p.user.last_name)) +
+                    p.user.first_name)
+
+        return sorted(profiles, key=_parameterized_keyfunc)
 
     def custom_validate_for_application(self, application, issues):
         """Perform check on an application (for CustomValidationIssues)"""
 
         nr_feedbacks = 0
         for feedback in self.filter(application=application).iterator():
-            nr_feedbacks += 1
-            # TODO: word length tests
+            if feedback.peer != application.applicant:
+                nr_feedbacks += 1
+                # TODO: word length tests
 
         if nr_feedbacks < settings.FREEMONEY_MIN_FEEDBACK_COUNT:
             issues.create(section='feedback', code='min-length')

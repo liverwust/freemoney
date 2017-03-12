@@ -1,199 +1,145 @@
 import contextlib
+from datetime import datetime, timezone
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 from freemoney.models import (ApplicantProfile,
                               Application,
-                              ScholarshipAward,
-                              ScholarshipAwardPicker,
-                              ScholarshipAwardPrompt,
+                              CustomValidationIssueSet,
+                              Award,
                               Semester)
 
-class ScholarshipAwardPickerTestCase(TestCase):
-    """Verify that the rules in the ScholarshipAwardPicker are enforced"""
+
+class AwardApplicationTests(TestCase):
+    """Test the validation of Awards within an Application"""
 
     def setUp(self):
-        self.fall_applicant = ApplicantProfile.objects.create(
+        self.applicant = ApplicantProfile.objects.create(
                 user=get_user_model().objects.create_user(
-                        username='fall@example.com',
+                        username='test1234@example.com',
                         password='pass1234'
                 ),
-                is_first_login=False
+                must_change_password=False
         )
-        self.fall_application = Application.objects.create(
-                applicant=self.fall_applicant,
-                application_semester = Semester('FA10')
+        self.application = Application.objects.create(
+                applicant=self.applicant,
+                due_at = datetime(2016, 11, 15, tzinfo=timezone.utc)
         )
-        self.spring_applicant = ApplicantProfile.objects.create(
-                user=get_user_model().objects.create_user(
-                        username='spring@example.com',
-                        password='pass1234'
-                ),
-                is_first_login=False
-        )
-        self.spring_application = Application.objects.create(
-                applicant=self.spring_applicant,
-                application_semester = Semester('SP10')
-        )
-        for award in set(['ean_hong', 'ambassador', 'giff_albright',
-                          'joe_conway', 'dan_summers', 'navy_marine',
-                          'excellence', 'pledge']):
-            ScholarshipAwardPrompt.objects.create(
-                    identifier=award,
-                    name='{} Name'.format(award),
-                    description = '{} Description'.format(award)
-            )
 
-    @contextlib.contextmanager
-    def assertRaisesValidationCode(self, expected_code):
-        with self.assertRaises(ValidationError) as cm:
-            yield
-        relevant_errors = []
-        for error in cm.exception.messages:
-            if isinstance(error, ValidationError):
-                if error.code == expected_code:
-                    relevant_errors.append(error)
-        self.assertNotEqual([], relevant_errors)
+    def test_differing_semester_awards(self):
+        fall_awards = Award.objects.for_semester(Semester('FA10'))
+        spring_awards = Award.objects.for_semester(Semester('SP17'))
+        self.assertNotEqual(set(fall_awards), set(spring_awards))
 
-    def test_populate(self):
-        """Pursue the possibility that the Picker doesn't populate properly"""
+    def test_too_few_awards(self):
+        """Verify that at least one award must be selected"""
 
-        fall_picker = ScholarshipAwardPicker.objects.create_and_populate(
-                application=self.fall_application
-        )
-        expected_fall_awards = set(['ean_hong', 'excellence', 'pledge'])
-        for fall_award in fall_picker.scholarshipaward_set.iterator():
-            self.assertIn(fall_award.identifier, expected_fall_awards)
-            expected_fall_awards.remove(fall_award.identifier)
-            matching_prompt = ScholarshipAwardPrompt.objects.get(
-                    identifier=fall_award.identifier
-            )
-            self.assertEqual(matching_prompt.name, fall_award.name)
-            self.assertEqual(matching_prompt.description,
-                             fall_award.description)
-            self.assertEqual(False, fall_award.chosen)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='award',
+                                               code='min-length')), [])
 
-        spring_picker = ScholarshipAwardPicker.objects.create_and_populate(
-                application=self.spring_application
-        )
-        expected_spring_awards = set(['ambassador', 'giff_albright',
-                                      'joe_conway', 'dan_summers',
-                                      'navy_marine']) | expected_fall_awards
-        for spring_award in spring_picker.scholarshipaward_set.iterator():
-            self.assertIn(spring_award.identifier, expected_spring_awards)
-            expected_spring_awards.remove(spring_award.identifier)
-            matching_prompt = ScholarshipAwardPrompt.objects.get(
-                    identifier=spring_award.identifier
-            )
-            self.assertEqual(matching_prompt.name, spring_award.name)
-            self.assertEqual(matching_prompt.description,
-                             spring_award.description)
-            self.assertEqual(False, spring_award.chosen)
+        excellence = Award.objects.latest_version_of('excellence')
+        self.application.award_set.add(excellence)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='award')), [])
 
-    def test_field_manipulation(self):
-        """Verify that a few types of field manipulation are detected.
+        self.application.award_set.clear()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='award',
+                                               code='min-length')), [])
 
-        This is NOT a security-critical test! The user couldn't introduce
-        anything into these fields (e.g., via a webform) that could cause
-        trouble. I'm merely checking for logic errors.
-        """
+    def test_non_semester_award(self):
+        """Verify error if a Spring award is selected in the Fall"""
 
-        picker = ScholarshipAwardPicker.objects.create_and_populate(
-                application=self.spring_application
-        )
-        for award in picker.scholarshipaward_set.iterator():
-            award.chosen = True
-            award.save()
+        excellence = Award.objects.latest_version_of('excellence')
+        self.application.award_set.add(excellence)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='award')), [])
 
-        false_award = ScholarshipAward.objects.create(
-                picker=picker,
-                position=99,
-                identifier='false',
-                name='false Name',
-                description='false Description',
-                chosen=False
-        )
-        with self.assertRaisesValidationCode('award:invalid'):
-            picker.full_clean()
-        false_award.delete()
-
-        try:
-            picker.full_clean()
-        except ValidationError as exc:
-            for error in exc.messages:
-                self.assertNotIn('award', error.code)
-
-        picker.scholarshipaward_set.first().delete()
-        with self.assertRaisesValidationCode('award:required'):
-            picker.full_clean()
-
-        picker.scholarshipaward_set.delete()
-        with self.assertRaisesValidationCode('award:min_length'):
-            picker.full_clean()
+        ambassador = Award.objects.latest_version_of('ambassador')
+        self.application.award_set.add(ambassador)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='award',
+                                               code='invalid')), [])
 
     def test_endowment_senior_limitation(self):
         """Ensure that a graduating senior cannot select endowment awards"""
 
-        full_set = set(['ean_hong', 'ambassador', 'giff_albright',
-                        'joe_conway', 'dan_summers', 'navy_marine',
-                        'excellence', 'pledge'])
-        endowment_set = full_set - set(['ean_hong'])
+        ean_hong = Award.objects.latest_version_of('ean_hong')
+        excellence = Award.objects.latest_version_of('excellence')
 
-        self.fall_application.semester_graduating = Semester('FA10')
-        fall_picker = ScholarshipAwardPicker.objects.create_and_populate(
-                application=self.fall_application
-        )
-        self.spring_application.semester_graduating = Semester('SP10')
-        spring_picker = ScholarshipAwardPicker.objects.create_and_populate(
-                application=self.spring_application
-        )
+        self.application.semester_graduating = Semester('FA16')
+        self.application.award_set.set([ean_hong])
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='award',
+                                            field='selected',
+                                            code='prohibited')), [])
 
-        @contextlib.contextmanager
-        def _process_picker(picker, identifier_set):
-            for identifier in identifier_set:
-                try:
-                    award = picker.scholarshipaward_set.get(
-                            identifier=identifier
-                    )
-                    yield award
-                except ScholarshipAward.DoesNotExist:
-                    yield None
+        self.application.award_set.add(excellence)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='award',
+                                                field='selected',
+                                                code='prohibited')), [])
 
-        with _process_picker(fall_picker, full_set - endowment_set) as award:
-            if award != None:
-                award.chosen = True
-                award.save()
-        with _process_picker(spring_picker, full_set - endowment_set) as award:
-            if award != None:
-                award.chosen = True
-                award.save()
-        try:
-            fall_picker.full_clean()
-        except ValidationError as exc:
-            for error in exc.messages:
-                if isinstance(error, ValidationError):
-                    self.assertNotIn('award', error.code)
-        try:
-            spring_picker.full_clean()
-        except ValidationError as exc:
-            for error in exc.messages:
-                if isinstance(error, ValidationError):
-                    self.assertNotIn('award', error.code)
+        self.application.award_set.remove(excellence)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='award',
+                                            field='selected',
+                                            code='prohibited')), [])
 
-        for identifier in endowment_set:
-            with _process_picker(fall_picker, set([identifier])) as award:
-                if award != None:
-                    award.chosen = True
-                    award.save()
-                    with self.raisesValidationCode('award:senior_rule'):
-                        fall_picker.full_clean()
-                    award.chosen = False
-                    award.save()
-            with _process_picker(spring_picker, set([identifier])) as award:
-                if award != None:
-                    award.chosen = True
-                    award.save()
-                    with self.raisesValidationCode('award:senior_rule'):
-                        spring_picker.full_clean()
-                    award.chosen = False
-                    award.save()
+
+class AwardAvailabilityTest(TestCase):
+    """Verify that Awards are available, and under the correct circumstances"""
+
+    def setUp(self):
+        self.old = Award.objects.create(identifier='test',
+                                        name='Test Award',
+                                        description='Text for oldest version',
+                                        previous_version=None)
+        self.mid = Award.objects.create(identifier='test',
+                                        name='Test Award',
+                                        description='Text for middle version',
+                                        previous_version=self.old)
+        self.new = Award.objects.create(identifier='test',
+                                        name='Test Award',
+                                        description='Text for newest version',
+                                        previous_version=self.mid)
+
+    def test_latest_award_nominal(self):
+        """Check that the latest version of an award is returned"""
+        self.assertEqual(self.new,
+                         Award.objects.latest_version_of('test'))
+
+    def test_latest_award_with_cycle(self):
+        """Verify graceful handling of an infinite foreign key loop"""
+
+        self.old.previous_version = self.new
+        self.old.full_clean()
+        self.old.save()
+        with self.assertRaises(ValueError):
+            Award.objects.latest_version_of('test')
+
+    def test_latest_award_with_split(self):
+        """Verify graceful handling of a *split* or *branched* award"""
+
+        self.mid.previous_version = None
+        self.mid.full_clean()
+        self.mid.save()
+        with self.assertRaises(ValueError):
+            Award.objects.latest_version_of('test')
+
+    def test_latest_award_with_selfcycles(self):
+        """The worst case: each award points to itself, independently"""
+
+        for award in Award.objects.filter(identifier='test'):
+            award.previous_version = award
+            award.save()
+        with self.assertRaises(ValueError):
+            Award.objects.latest_version_of('test')

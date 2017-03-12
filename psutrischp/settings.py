@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 
-from datetime import date
+from datetime import datetime, timedelta, timezone
 import environ
 import os
 
@@ -117,5 +117,14 @@ STATIC_URL = '/static/'
 
 
 # Freemoney-specific configuration
+def _read_due_date(env):
+    date_str = env('DUE_DATE')
+    due_date = datetime.strptime(date_str, '%Y-%m-%d')
+    due_datetime = datetime(year=due_date.year, month=due_date.month,
+                            day=due_date.day, hour=23, minute=59, second=59,
+                            tzinfo=timezone(timedelta(hours=-5)))
+    return due_datetime
+FREEMONEY_DUE_DATE = _read_due_date(env) # 11:59:59 PM EST on this date, OR
+                                         # 12:59:59 AM EDT on the next day
+                                         # (the discrepancy is of no concern)
 FREEMONEY_MIN_FEEDBACK_COUNT = 3   # min # of feedback responses
-FREEMONEY_DUE_DATE = date(2017, 4, 9) # 11:59:59 PM EST on this date

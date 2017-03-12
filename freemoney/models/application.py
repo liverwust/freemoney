@@ -29,7 +29,6 @@ class Application(Model):
     psu_email = TextField(blank=True)
     preferred_email = TextField(blank=True)
     psu_id = TextField(blank=True)
-    outside_pa = BooleanField(default=False)
     semester_initiated = SemesterField(null=True, blank=True)
     semester_graduating = SemesterField(null=True, blank=True)
     cumulative_gpa = DecimalField(null=True,

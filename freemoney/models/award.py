@@ -21,27 +21,21 @@ class AwardManager(Manager):
         else:
             identifier = identifier_or_award
 
-        award_set = set(self.filter(identifier=identifier).all())
-        head = None
-        for award in award_set:
-            if award.previous_version is None:
-                head = award
-                break
-        if head is None:
-            raise ValueError('could not find newest of '+identifier)
-        else:
-            old_head = head
-            award_set.remove(old_head)
-            while len(award_set) > 0:
-                for award in award_set:
-                    if award.previous_version == old_head:
-                        head, old_head = award, head
-                        award_set.remove(old_head)
-                        break
-                if old_head == head:
-                    raise ValueError('could not find newest of '+identifier)
-
-        return head
+        full_set = list(self.filter(identifier=identifier).all())
+        tail = None
+        for i in range(len(full_set)):
+            new_tail = None
+            for award in full_set:
+                if award.previous_version == tail:
+                    if new_tail is None:
+                        new_tail = award
+                    else:
+                        raise ValueError('branch detected in linked list')
+            if new_tail is None:
+                raise ValueError('split detected in linked list')
+            else:
+                tail = new_tail
+        return tail
 
     def for_semester(self, semester=None):
         """Return the ordered list of Awards for a semester.
@@ -86,17 +80,17 @@ class AwardManager(Manager):
         for index, selection in enumerate(application.award_set.iterator()):
             actual_awards.add(selection)
             if selection not in expected_awards:
-                if select in valid_endowments:
+                if selection in valid_endowments:
                     issues.create(section='award',
-                                field='selected',
-                                subfield=index,
-                                code='prohibited')
+                                  field='selected',
+                                  subfield=index,
+                                  code='prohibited')
                     actual_awards.remove(selection)
                 else:
                     issues.create(section='award',
-                                field='selected',
-                                subfield=index,
-                                code='invalid')
+                                  field='selected',
+                                  subfield=index,
+                                  code='invalid')
                     actual_awards.remove(selection)
 
         if len(actual_awards) < 1:
@@ -110,7 +104,10 @@ class Award(Model):
     identifier = SlugField()
     name = TextField()
     description = TextField()
-    previous_version = ForeignKey('Award', null=True, on_delete=SET_NULL)
+    previous_version = ForeignKey('Award',
+                                  null=True,
+                                  blank=True,
+                                  on_delete=SET_NULL)
     application_set = ManyToManyField(Application)
 
     objects = AwardManager()
