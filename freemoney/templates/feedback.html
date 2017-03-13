@@ -3,4 +3,22 @@
 
 {% block content %}
 {% bootstrap_formset form %}
+
+<div class="modal fade" id="dialog-peer-name-warn" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close dialog-peer-name-button" id="dialog-peer-name-close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Really delete feedback?</h4>
+      </div>
+      <div class="modal-body">
+        <p>Your feedback for <span id="dialog-peer-name-display"></span> will be <strong>DELETED</strong> if you deselect his name. Are you sure you want to proceed?<p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="dialog-peer-name-cancel" class="btn btn-default dialog-peer-name-button">No, keep it</button>
+        <button type="button" id="dialog-peer-name-confirm" class="btn btn-danger dialog-peer-name-button">Yes, delete my response</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
