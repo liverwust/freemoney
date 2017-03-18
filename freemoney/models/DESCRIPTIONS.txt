@@ -63,3 +63,15 @@ Application
                 key = 'scholarshipaward_set'
                 message = 'need to select at least one scholarship award'
                 error_dict[key] = ValidationError(message, code='invalid')
+
+    TYPES = ['Federal or State Loan',
+             'Private Loan',
+             'Federal or State Grant',
+             'Private Grant',
+             'Scholarship affiliated with PSU',
+             'External scholarship (e.g., Triangle)',
+             'Work-Study affiliated with PSU',
+             'Personal or family income',
+             'Other']
+
+            help_text='Full name of the fund, organization, sponsor, etc.',

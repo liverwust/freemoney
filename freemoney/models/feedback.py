@@ -11,12 +11,6 @@ import freemoney.models
 class FeedbackManager(Manager):
     """Manager class for the Feedback model (see below)"""
 
-    @staticmethod
-    def _gen_padded_keyfunc(max_lastname_len):
-        """Convert John Smith to "smith   john" for direct comparison"""
-
-        return _inner_keyfunc
-
     def get_eligible_peers(self):
         """Get a list of all ApplicantProfiles which can be reviewed"""
 

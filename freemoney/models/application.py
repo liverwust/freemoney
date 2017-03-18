@@ -163,3 +163,6 @@ class Application(Model):
                             freemoney.models.Feedback.objects]
         for section_manager in section_managers:
             section_manager.custom_validate_for_application(self, issues)
+
+        for financial_aid in self.financialaid_set.iterator():
+            financial_aid.custom_validate(issues)
