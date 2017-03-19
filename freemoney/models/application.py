@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.conf import settings
@@ -6,6 +6,7 @@ from django.db.models import (Model,
                               CASCADE,
                               BooleanField,
                               DateTimeField,
+                              FileField,
                               FloatField,
                               ForeignKey,
                               TextField)
@@ -16,6 +17,15 @@ from freemoney.models import (CustomValidationIssue,
                               SemesterField)
 from phonenumber_field import phonenumber
 import re
+
+
+def upload_filename(instance, filename):
+    """Always save to $MEDIA_ROOT/<user profile ID>/transcript_<time>.pdf"""
+    application = instance
+    return "{}/transcript_{}.pdf".format(
+            application.applicant.pk,
+            datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+    )
 
 
 class Application(Model):
@@ -36,6 +46,10 @@ class Application(Model):
     semester_gpa = FloatField(null=True, blank=True)
     in_state_tuition = BooleanField(default=False)
     additional_remarks = TextField(blank=True)
+    transcript = FileField(null=True,
+                           blank=True,
+                           upload_to=upload_filename)
+    transcript_modified_at = DateTimeField(null=True, blank=True)
     submitted = BooleanField(default=False)
 
     def save(self, *args, **kwargs):
@@ -150,6 +164,11 @@ class Application(Model):
             issues.create(section=common_section,
                           field='semester_gpa',
                           code='invalid')
+
+        if self.transcript is None:
+            issues.create(section=common_section,
+                          field='transcript',
+                          code='required')
 
     def custom_validate(self, issues):
         """Validate entire Application using custom logic.

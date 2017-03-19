@@ -47,7 +47,7 @@
 
       <div class="row"><div class="col-md-12">&nbsp;</div></div>
 
-      <form action="{{ postback }}" method="post" class="form">
+      <form enctype="{{ enctype }}" action="{{ postback }}" method="post" class="form">
         {% csrf_token %}
         {% block content %}
         {% endblock %}

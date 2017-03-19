@@ -29,6 +29,7 @@ class WizardPageView(LoginRequiredMixin, View):
     * (required) class attribute page_name: short name from PAGES table
     * class attribute prev_page: WizardPageView subclass for the previous page
     * class attribute progress_sentry(): return False if overwhelmed by issues
+    * class attribute has_files: True to ensure enctype=multipart/form-data
     * instance method prepopulate_form: return a Form or FormSet on GET
     * instance method parse_form: return a Form or FormSet following POST
     * instance method save_changes: fields -> DB, ignoring model validation
@@ -118,6 +119,11 @@ class WizardPageView(LoginRequiredMixin, View):
                 'postback': self._uri_of(self.page_name),
                 'buttons': [x[0] for x in self._calculate_valid_buttons()],
         }
+        if hasattr(type(self), 'has_files') and type(self).has_files:
+            base_context['enctype'] = 'multipart/form-data'
+        else:
+            base_context['enctype'] = 'application/x-www-form-urlencoded'
+
         for short_name, long_name in WizardPageView.PAGES:
             is_active = (short_name == type(self).page_name)
             base_context['steps'].append((long_name, is_active))

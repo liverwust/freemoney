@@ -1,12 +1,16 @@
+from datetime import datetime, timezone
 from django.core.exceptions import ValidationError
 from django.forms import (BooleanField,
                           CharField,
                           ChoiceField,
+                          FileField,
                           Form,
+                          HiddenInput,
                           IntegerField,
                           Textarea)
 from freemoney.models import (Application,
                               Semester)
+import pytz
 import re
 
 
@@ -89,6 +93,7 @@ class BasicInfoPage(WizardPageView):
 
     page_name = 'basicinfo'
     prev_page = FeedbackPage
+    has_files = True
 
     _direct_copy = ['address',
                     'phone',
@@ -144,10 +149,25 @@ class BasicInfoPage(WizardPageView):
         initial_data['year_initiated'] = when_initiated[1]
         initial_data['semestertype_graduating'] = when_graduating[0]
         initial_data['year_graduating'] = when_graduating[1]
-        return BasicInfoForm(initial_data)
+
+        if self.application.transcript_modified_at is None:
+            initial_data['transcript_modified_at'] = ''
+        else:
+            modified_at = self.application.transcript_modified_at
+            modified_at_tz = modified_at.astimezone(pytz.timezone('US/Eastern'))
+            initial_data['transcript_modified_at'] = modified_at_tz.strftime(
+                    '%Y-%m-%d %H:%M:%S %Z'
+            )
+
+        if self.application.transcript == '':
+            initial_file = {}
+        else:
+            initial_file = {'transcript': self.application.transcript}
+
+        return BasicInfoForm(initial_data, initial_file)
 
     def parse_form(self):
-        return BasicInfoForm(self.request.POST)
+        return BasicInfoForm(self.request.POST, self.request.FILES)
 
     def save_changes(self):
         for field in BasicInfoPage._direct_copy:
@@ -185,6 +205,11 @@ class BasicInfoPage(WizardPageView):
             self.application.semester_initiated = Semester(when_initiated)
         if when_graduating[0] != '' and when_graduating[1] is not None:
             self.application.semester_graduating = Semester(when_graduating)
+
+        if self.form.cleaned_data['transcript'] is not None:
+            self.application.transcript = self.form.cleaned_data['transcript']
+            modified_now = datetime.now(timezone.utc)
+            self.application.transcript_modified_at = modified_now
 
         self.application.full_clean()
         self.application.save()
@@ -302,6 +327,12 @@ class BasicInfoForm(Form):
     cumulative_gpa = CharField(label='Cumulative GPA',
                                help_text='As of the end of last semester',
                                required=False)
+    transcript = FileField(
+            label='Unofficial transcript',
+            help_text='See the <a href="https://tutorials.lionpath.psu.edu/public/Docs/ViewUnoffTrans.docx">LionPATH documentation</a>',
+            required=False
+    )
+    transcript_modified_at = CharField(widget=HiddenInput, required=False)
     in_state_tuition = BooleanField(
             label='Do you live in Pennsylvania?',
             help_text='PA residents pay a reduced tuition rate at PSU',
