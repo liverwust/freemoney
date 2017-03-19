@@ -10,6 +10,10 @@ urlpatterns = [
                          name='award'),
         url(r'^feedback$', freemoney.views.FeedbackPage.as_view(),
                            name='feedback'),
+        url(r'^basicinfo$', freemoney.views.BasicInfoPage.as_view(),
+                            name='basicinfo'),
+#        url(r'^finaid$', freemoney.views.FinancialAidPage.as_view(),
+#                         name='finaid'),
         url(r'^dummy$', freemoney.views.dummy.DummyPage.as_view(),
                         name='dummy')   # TODO: remove
 ]

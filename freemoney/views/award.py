@@ -68,20 +68,12 @@ class AwardPage(WizardPageView):
                     'Must choose at least one scholarship award'
             )
         for invalid_award in self.issues.search(section='award',
-                                                field='selected',
+                                                field='[records]',
                                                 code='invalid',
                                                 discard=True):
             self.form[invalid_award.subfield].add_error(
                     None,
                     'Invalid or unknown award selection'
-            )
-        for prohibited in self.issues.search(section='award',
-                                             field='selected',
-                                             code='prohibited',
-                                             discard=True):
-            self.form[prohibited.subfield].add_error(
-                    None,
-                    'Graduating seniors can only apply for the Hong'
             )
         for issue in self.issues.search(section='award', discard=True):
             if self.form._non_form_errors == None:

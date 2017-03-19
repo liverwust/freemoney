@@ -54,6 +54,8 @@ class WizardPageView(LoginRequiredMixin, View):
     PAGES = [('welcome', 'Welcome'),
              ('award',  'Choose Awards'),
              ('feedback', 'Peer Feedback'),
+             ('basicinfo', 'Basic Information'),
+#             ('finaid', 'Financial Aid'),
              ('dummy', 'Dummy Page')] # TODO: get rid of this last line
 
     # don't allow PUT, PATCH, DELETE, or TRACE

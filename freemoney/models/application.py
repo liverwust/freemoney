@@ -1,5 +1,4 @@
 import datetime
-from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 from django.conf import settings
@@ -7,7 +6,7 @@ from django.db.models import (Model,
                               CASCADE,
                               BooleanField,
                               DateTimeField,
-                              DecimalField,
+                              FloatField,
                               ForeignKey,
                               TextField)
 import freemoney.models
@@ -29,16 +28,12 @@ class Application(Model):
     psu_email = TextField(blank=True)
     preferred_email = TextField(blank=True)
     psu_id = TextField(blank=True)
+    major = TextField(blank=True)
+    emch_minor = BooleanField(default=False)
     semester_initiated = SemesterField(null=True, blank=True)
     semester_graduating = SemesterField(null=True, blank=True)
-    cumulative_gpa = DecimalField(null=True,
-                                  blank=True,
-                                  max_digits=3,
-                                  decimal_places=2)
-    semester_gpa = DecimalField(null=True,
-                                blank=True,
-                                max_digits=3,
-                                decimal_places=2)
+    cumulative_gpa = FloatField(null=True, blank=True)
+    semester_gpa = FloatField(null=True, blank=True)
     in_state_tuition = BooleanField(default=False)
     additional_remarks = TextField(blank=True)
     submitted = BooleanField(default=False)
@@ -87,10 +82,9 @@ class Application(Model):
                             field='psu_email',
                             code='invalid')
 
-        if self.preferred_email is None or self.preferred_email == '':
-            issues.create(section=common_section,
-                          field='preferred_email',
-                          code='required')
+        if self.preferred_email == '':
+            # preferred_email is assumed to be psu_email if blank
+            pass
         else:
             try:
                 EmailValidator()(self.preferred_email)
@@ -108,11 +102,20 @@ class Application(Model):
                           field='psu_id',
                           code='invalid')
 
+        if self.major is None or self.major == '':
+            issues.create(section=common_section,
+                          field='major',
+                          code='required')
+
         if self.semester_initiated is None:
             issues.create(section=common_section,
                           field='semester_initiated',
                           code='required')
         elif self.semester_initiated > Semester(self.due_at.date()):
+            issues.create(section=common_section,
+                          field='semester_initiated',
+                          code='invalid')
+        elif self.semester_initiated < Semester(('Spring', 1928)):
             issues.create(section=common_section,
                           field='semester_initiated',
                           code='invalid')
@@ -125,13 +128,16 @@ class Application(Model):
             issues.create(section=common_section,
                           field='semester_graduating',
                           code='invalid')
+        elif self.semester_graduating > Semester(('Fall', 2099)):
+            issues.create(section=common_section,
+                          field='semester_graduating',
+                          code='invalid')
 
         if self.cumulative_gpa == None:
             issues.create(section=common_section,
                           field='cumulative_gpa',
                           code='required')
-        elif (self.cumulative_gpa < Decimal('0.00') or
-              self.cumulative_gpa > Decimal('4.00')):
+        elif (self.cumulative_gpa < 0.0 or self.cumulative_gpa > 4.0):
             issues.create(section=common_section,
                           field='cumulative_gpa',
                           code='invalid')
@@ -140,8 +146,7 @@ class Application(Model):
             issues.create(section=common_section,
                           field='semester_gpa',
                           code='required')
-        elif (self.semester_gpa < Decimal('0.00') or
-              self.semester_gpa > Decimal('4.00')):
+        elif (self.semester_gpa < 0.0 or self.semester_gpa > 4.0):
             issues.create(section=common_section,
                           field='semester_gpa',
                           code='invalid')

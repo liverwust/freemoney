@@ -62,40 +62,53 @@ class AwardManager(Manager):
     def custom_validate_for_application(self, application, issues):
         """Perform check on an application (for CustomValidationIssues)"""
 
-        app_semester = Semester(application.due_at)
+        this_semester_awards = self.for_semester(Semester(application.due_at))
 
-        all_endowments = set([self.latest_version_of(x) for x in [
-                'giff_albright', 'joe_conway', 'ambassador', 'dan_summers',
-                'navy_marine', 'excellence', 'pledge'
-        ]])
-        valid_endowments = set(all_endowments)
-        valid_endowments &= set(self.for_semester(app_semester))
-
-        expected_awards = set(self.for_semester(Semester(application.due_at)))
-        if (application.semester_graduating is not None and
-            application.semester_graduating <= Semester(application.due_at)):
-            expected_awards -= all_endowments
-
-        actual_awards = set()
         for index, selection in enumerate(application.award_set.iterator()):
-            actual_awards.add(selection)
-            if selection not in expected_awards:
-                if selection in valid_endowments:
-                    issues.create(section='award',
-                                  field='selected',
-                                  subfield=index,
-                                  code='prohibited')
-                    actual_awards.remove(selection)
-                else:
-                    issues.create(section='award',
-                                  field='selected',
-                                  subfield=index,
-                                  code='invalid')
-                    actual_awards.remove(selection)
+            if selection not in this_semester_awards:
+                issues.create(section='award',
+                              field='[records]',
+                              code='invalid')
 
-        if len(actual_awards) < 1:
-            issues.create(section='award',
-                          code='min-length')
+            # Graduating seniors can only apply for certain awards
+            if application.semester_graduating is None:
+                pass
+            elif (application.semester_graduating ==
+                  Semester(application.due_at)):
+                if selection.identifier in set(['giff_albright', 'joe_conway',
+                                                'ambassador', 'dan_summers',
+                                                'navy_marine', 'excellence',
+                                                'pledge']):
+                    issues.create(section='basicinfo',
+                                  field='semester_graduating',
+                                  code='prohibited')
+
+            # Only AEs can apply for the Giff Albright award
+            if application.major == '':
+                pass
+            elif application.major == 'Architectural Engineering':
+                pass
+            else:
+                if selection.identifier == 'giff_albright':
+                    issues.create(section='basicinfo',
+                                    field='major',
+                                    code='prohibited')
+
+            # Only E SC and E MCH can apply for the Joe Conway award
+            if application.major == '':
+                pass
+            elif application.major == 'Engineering Science':
+                pass
+            elif application.emch_minor == True:
+                pass
+            else:
+                if selection.identifier == 'joe_conway':
+                    issues.create(section='basicinfo',
+                                    field='major',
+                                    code='prohibited')
+
+        if application.award_set.count() < 1:
+            issues.create(section='award', code='min-length')
 
 
 class Award(Model):

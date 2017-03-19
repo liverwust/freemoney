@@ -1,10 +1,9 @@
 from datetime import date, datetime, timezone
-from decimal import Decimal
 from django.conf import settings
 from django.db.models import (Model,
                               CASCADE,
                               DateField,
-                              DecimalField,
+                              FloatField,
                               ForeignKey,
                               SlugField,
                               TextField)
@@ -19,10 +18,7 @@ class FinancialAid(Model):
     provider = TextField(blank=True)
     end_date = DateField(null=True, blank=True)
     installment_frequency = TextField(blank=True)
-    installment_amount = DecimalField(null=True,
-                                      blank=True,
-                                      max_digits=7,
-                                      decimal_places=2)
+    installment_amount = FloatField(null=True, blank=True)
 
     @property
     def yearly_amount(self):
@@ -51,7 +47,8 @@ class FinancialAid(Model):
 
         issue_invalid_present = False
 
-        if self.installment_amount < Decimal('0.00'):
+        if (self.installment_amount < 0.0 or
+            self.installment_amount > 200000.0):
             issues.create(section='finaid',
                           field='[records]',
                           subfield=self.pk,

@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
-from decimal import Decimal
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 from freemoney.models import (ApplicantProfile,
                               Application,
@@ -33,7 +31,7 @@ class FinancialAidApplicationTests(TestCase):
                 provider='',
                 end_date=None,
                 installment_frequency='yearly',
-                installment_amount=Decimal('1.00')
+                installment_amount=1.00
         )
 
         # no provider
@@ -89,7 +87,7 @@ class FinancialAidApplicationTests(TestCase):
                 provider='testprovider',
                 end_date=None,
                 installment_frequency='yearly',
-                installment_amount=Decimal('-1.00')
+                installment_amount=-1.00,
         )
 
         # too small (negative)
@@ -103,12 +101,20 @@ class FinancialAidApplicationTests(TestCase):
         self.assertNotEqual(next(first_iter).subfield, None)
 
         # too large
-        aid.installment_amount = Decimal('1000000.00')
-        with self.assertRaises(ValidationError):
-            aid.full_clean()
+        aid.installment_amount = 1000000.00
+        aid.full_clean()
+        aid.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        found_issues = issues.search(section='finaid',
+                                     field='[records]',
+                                     code='invalid')
+        self.assertEqual(len(found_issues), 1)
+        first_iter = iter(found_issues)
+        self.assertNotEqual(next(first_iter).subfield, None)
 
         # just right
-        aid.installment_amount = Decimal('5000.00')
+        aid.installment_amount = 5000.00
         aid.full_clean()
         aid.save()
         issues = CustomValidationIssueSet()
@@ -124,19 +130,19 @@ class FinancialAidApplicationTests(TestCase):
                 provider='testprovider',
                 end_date=None,
                 installment_frequency='yearly',
-                installment_amount=Decimal('500.00')
+                installment_amount=500.00
         )
-        self.assertEqual(Decimal('500.00'), aid.yearly_amount)
+        self.assertAlmostEqual(500.00, aid.yearly_amount)
 
         aid.installment_frequency = 'monthly'
         aid.full_clean()
         aid.save()
-        self.assertEqual(Decimal('6000.00'), aid.yearly_amount)
+        self.assertAlmostEqual(6000.00, aid.yearly_amount)
 
         aid.installment_frequency = 'semesterly'
         aid.full_clean()
         aid.save()
-        self.assertEqual(Decimal('1000.00'), aid.yearly_amount)
+        self.assertAlmostEqual(1000.00, aid.yearly_amount)
 
         aid.installment_frequency = 'semeserly' # misspelled
         aid.full_clean()

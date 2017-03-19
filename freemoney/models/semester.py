@@ -62,6 +62,15 @@ class Semester:
     def date(self):
         return self._inner_date
 
+    @property
+    def semester_tuple(self):
+        if self.is_fall:
+            return ('Fall', self.date.year)
+        elif self.is_spring:
+            return ('Spring', self.date.year)
+        else:
+            raise ValueError('Invalid semestertype (Fall/Spring)')
+
     def __str__(self):
         semester = Semester.month_day_to_semester(self._inner_date.month,
                                                   self._inner_date.day)
@@ -104,7 +113,6 @@ class Semester:
 
 
 class SemesterField(models.DateField):
-
     description = "Represents the pairing of a semester and a year in the DB"
 
     def from_db_value(self, value, expression_, connection_, context_):
@@ -158,9 +166,3 @@ class SemesterField(models.DateField):
         val = self.value_from_object(obj)
         val = self.get_prep_value(val)
         return str(val)
-
-    def formfield(self, **kwargs):
-        from freemoney.views import SemesterFormField
-        defaults = {'form_class': SemesterFormField}
-        defaults.update(kwargs)
-        return super(SemesterField, self).formfield(**defaults)

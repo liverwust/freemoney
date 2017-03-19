@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.validators import ValidationError
 from django.test import TestCase
@@ -84,23 +83,25 @@ class ApplicationValidationTests(TestCase):
     def test_semester_initiated(self):
         self.attempt_valid_and_invalid_values('semester_initiated',
                 valids=(Semester('Fall 2009'), Semester('Spring 2010')),
-                invalids=(Semester('Fall 2010'), Semester('SP11'), None)
+                invalids=(Semester('Fall 2010'), Semester('SP11'), None,
+                          Semester('Fall 1927'))
         )
 
     def test_semester_graduating(self):
         self.attempt_valid_and_invalid_values('semester_graduating',
                 valids=(Semester('Fall 2010'), Semester('Spring 2010')),
-                invalids=(Semester('Fall 2009'), Semester('Spring 2009'), None)
+                invalids=(Semester('Fall 2009'), Semester('Spring 2009'), None,
+                          Semester('Spring 2100'))
         )
 
     def test_cumulative_gpa(self):
         self.attempt_valid_and_invalid_values('cumulative_gpa',
-                valids=(Decimal('0.00'), Decimal('2.05'), Decimal('4.00')),
-                invalids=(Decimal('4.01'), Decimal('-0.01'))
+                valids=(0.0, 2.05, 4.00),
+                invalids=(4.01, -0.01)
         )
 
     def test_semester_gpa(self):
         self.attempt_valid_and_invalid_values('semester_gpa',
-                valids=(Decimal('0.00'), Decimal('2.05'), Decimal('4.00')),
-                invalids=(Decimal('4.01'), Decimal('-0.01'))
+                valids=(0.0, 2.05, 4.00),
+                invalids=(4.01, -0.01)
         )

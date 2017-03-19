@@ -76,24 +76,80 @@ class AwardApplicationTests(TestCase):
         self.application.award_set.set([ean_hong])
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
-        self.assertEqual(list(issues.search(section='award',
-                                            field='selected',
+        self.assertEqual(list(issues.search(section='basicinfo',
+                                            field='semester_graduating',
                                             code='prohibited')), [])
 
         self.application.award_set.add(excellence)
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
-        self.assertNotEqual(list(issues.search(section='award',
-                                                field='selected',
+        self.assertNotEqual(list(issues.search(section='basicinfo',
+                                                field='semester_graduating',
                                                 code='prohibited')), [])
 
         self.application.award_set.remove(excellence)
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
-        self.assertEqual(list(issues.search(section='award',
-                                            field='selected',
+        self.assertEqual(list(issues.search(section='basicinfo',
+                                            field='semester_graduating',
                                             code='prohibited')), [])
 
+    def test_major_restrictions(self):
+        """Ensure that only certain majors can apply to restricted awards"""
+
+        joe_conway = Award.objects.latest_version_of('joe_conway')
+        giff_albright = Award.objects.latest_version_of('giff_albright')
+
+        self.application.award_set.set([giff_albright])
+        self.application.major = 'Electrical Engineering'
+        self.application.full_clean()
+        self.application.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='basicinfo',
+                                               field='major',
+                                               code='prohibited')), [])
+
+        self.application.award_set.set([giff_albright])
+        self.application.major = 'Architectural Engineering'
+        self.application.full_clean()
+        self.application.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='basicinfo',
+                                            field='major',
+                                            code='prohibited')), [])
+
+        self.application.award_set.set([joe_conway])
+        self.application.major = 'Electrical Engineering'
+        self.application.full_clean()
+        self.application.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertNotEqual(list(issues.search(section='basicinfo',
+                                               field='major',
+                                               code='prohibited')), [])
+
+        self.application.award_set.set([joe_conway])
+        self.application.emch_minor = True
+        self.application.full_clean()
+        self.application.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='basicinfo',
+                                            field='major',
+                                            code='prohibited')), [])
+
+        self.application.award_set.set([joe_conway])
+        self.application.major = 'Engineering Science'
+        self.application.emch_minor = False
+        self.application.full_clean()
+        self.application.save()
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        self.assertEqual(list(issues.search(section='basicinfo',
+                                            field='major',
+                                            code='prohibited')), [])
 
 class AwardAvailabilityTest(TestCase):
     """Verify that Awards are available, and under the correct circumstances"""
