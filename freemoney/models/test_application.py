@@ -6,7 +6,6 @@ from freemoney.models import (Application,
                               ApplicantProfile,
                               CustomValidationIssue,
                               CustomValidationIssueSet,
-                              Feedback,
                               Semester)
 
 

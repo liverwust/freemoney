@@ -5,6 +5,5 @@ from .activity    import  Activity
 from .application import  Application
 from .award       import  Award
 from .essay       import (Essay, EssayPrompt)
-from .feedback    import  Feedback
 from .finaid      import  FinancialAid
 from .profile     import  ApplicantProfile
