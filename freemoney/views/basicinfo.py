@@ -11,7 +11,7 @@ import re
 
 
 from .common import WizardPageView
-from .feedback import FeedbackPage
+from .award import AwardPage
 
 
 # "Other" is automatically added later
@@ -88,7 +88,7 @@ class BasicInfoPage(WizardPageView):
     """Page where basic contact and demographic information is provided"""
 
     page_name = 'basicinfo'
-    prev_page = FeedbackPage
+    prev_page = AwardPage
 
     _direct_copy = ['address',
                     'phone',
@@ -251,7 +251,7 @@ class BasicInfoPage(WizardPageView):
 
 
 class BasicInfoForm(Form):
-    """Enables providing feedback for a single brother."""
+    """Enables providing basic contact and demographic information."""
 
     psu_id = CharField(label='PSU ID number',
                        help_text='Nine digits: 9xxxxxxxx',
