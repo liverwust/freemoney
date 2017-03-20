@@ -194,7 +194,6 @@ class WizardPageView(LoginRequiredMixin, View):
                         due_at=settings.FREEMONEY_DUE_DATE,
                         applicant=self.applicant
                 )
-                self.applicant.current_application = self.application
                 self.applicant.full_clean()
                 self.applicant.save()
                 add_message(self.request, INFO,
