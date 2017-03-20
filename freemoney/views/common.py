@@ -115,6 +115,7 @@ class WizardPageView(LoginRequiredMixin, View):
                 'steps': [],
                 'currentstep': type(self).page_name,
                 'postback': self._uri_of(self.page_name),
+                'deadline': settings.FREEMONEY_DUE_DATE.date,
                 'buttons': [x[0] for x in self._calculate_valid_buttons()],
         }
         for short_name, long_name in WizardPageView.PAGES:
