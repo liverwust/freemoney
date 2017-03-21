@@ -13,6 +13,7 @@
     {% load static %}
 
     <link rel="stylesheet" type="text/css" href="{% static "freemoney/freemoney.css" %}" />
+    <script src="{% static "freemoney/freemoney.js" %}"></script>
     <script src="{% static "freemoney/award.js" %}"></script>
     <script src="{% static "freemoney/basicinfo.js" %}"></script>
 
@@ -59,6 +60,9 @@
         {% endif %}
         {% if "prev" in buttons %}
           {% bootstrap_button "Previous" button_type="submit" button_class="btn-default" name="submit-type" value="prev" %}
+        {% endif %}
+        {% if "save" in buttons %}
+          {% bootstrap_button "Save" button_type="submit" button_class="btn-default" name="submit-type" value="save" %}
         {% endif %}
         {% if "next" in buttons %}
           {% bootstrap_button "Next" button_type="submit" button_class="btn-default" name="submit-type" value="next" %}

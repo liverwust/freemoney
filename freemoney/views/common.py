@@ -13,6 +13,7 @@ from django.views import View
 from django.views.defaults import server_error
 from freemoney.models import (Application,
                               ApplicantProfile,
+                              Award,
                               CustomValidationIssue,
                               CustomValidationIssueSet,
                               Semester)
@@ -53,9 +54,8 @@ class WizardPageView(LoginRequiredMixin, View):
     # (short name, display name)
     PAGES = [('welcome', 'Welcome'),
              ('award',  'Choose Awards'),
-             ('basicinfo', 'Basic Information'),
+             ('basicinfo', 'Basic Information')]
 #             ('finaid', 'Financial Aid'),
-             ('dummy', 'Dummy Page')] # TODO: get rid of this last line
 
     # don't allow PUT, PATCH, DELETE, or TRACE
     http_method_names = ['get', 'post', 'head', 'options']
@@ -70,15 +70,6 @@ class WizardPageView(LoginRequiredMixin, View):
         self.context = None
 
     def _initialize_for_request(self, request):
-        self._page_index = None
-        for index, names in enumerate(WizardPageView.PAGES):
-            short_name, long_name = names
-            if type(self).page_name == short_name:
-                self._page_index = index
-                break
-        if self._page_index == None:
-            raise KeyError('invalid page name: {}'.format(page_name))
-
         self.request = request
 
         try:
@@ -92,12 +83,39 @@ class WizardPageView(LoginRequiredMixin, View):
 
         try:
             self.application = self.applicant.current_application
+            if self.application.submitted:
+                return redirect(self._uri_of('submitted'))
         except ObjectDoesNotExist:
             # TODO: same landing page as for non-applicant users
             return server_error(self.request)
 
         self.issues = CustomValidationIssueSet()
         self.application.custom_validate(self.issues)
+
+        self._my_pages = []
+        self._page_index = None
+        needs_finaid_activity = Award.objects.check_app_needs_finaid_activity(
+                self.application
+        )
+        needs_essay = Award.objects.check_app_needs_essay(self.application)
+        for index, names in enumerate(WizardPageView.PAGES):
+            short_name, long_name = names
+            if not needs_finaid_activity:
+                if short_name == 'finaid' or short_name == 'activity':
+                    if type(self).page_name == short_name:
+                        return redirect(self._uri_of(self._my_pages[-1][0]))
+                    else:
+                        continue
+            if not needs_essay and short_name == 'essay':
+                if type(self).page_name == short_name:
+                    return redirect(self._uri_of(self._my_pages[-1][0]))
+                else:
+                    continue
+            if type(self).page_name == short_name:
+                self._page_index = index
+            self._my_pages.append((short_name, long_name))
+        if self._page_index == None:
+            raise KeyError('invalid page name: {}'.format(page_name))
 
         preceding_class = getattr(self, 'prev_page', None)
         while preceding_class is not None:
@@ -118,7 +136,7 @@ class WizardPageView(LoginRequiredMixin, View):
                 'deadline': settings.FREEMONEY_DUE_DATE.date,
                 'buttons': [x[0] for x in self._calculate_valid_buttons()],
         }
-        for short_name, long_name in WizardPageView.PAGES:
+        for short_name, long_name in self._my_pages:
             is_active = (short_name == type(self).page_name)
             base_context['steps'].append((long_name, is_active))
 
@@ -134,12 +152,13 @@ class WizardPageView(LoginRequiredMixin, View):
     def _calculate_valid_buttons(self):
         buttons = [('restart', None)]
         if self._page_index > 0:
-            prev_page = WizardPageView.PAGES[self._page_index - 1]
+            buttons.append(('save', None))
+            prev_page = self._my_pages[self._page_index - 1]
             buttons.append(('prev', prev_page))
-        if self._page_index + 1 < len(WizardPageView.PAGES):
-            next_page = WizardPageView.PAGES[self._page_index + 1]
+        if self._page_index + 1 < len(self._my_pages):
+            next_page = self._my_pages[self._page_index + 1]
             buttons.append(('next', next_page))
-        elif self._page_index + 1 == len(WizardPageView.PAGES):
+        elif self._page_index + 1 == len(self._my_pages):
             buttons.append(('submit', None))
         return buttons
 
@@ -198,20 +217,27 @@ class WizardPageView(LoginRequiredMixin, View):
                 self.applicant.save()
                 add_message(self.request, INFO,
                             'Application was successfully restarted')
-                return redirect(self._uri_of(WizardPageView.PAGES[0][0]))
+                return redirect(self._uri_of(self._my_pages[0][0]))
+            elif submit_type == 'save':
+                curr_page = self._my_pages[self._page_index]
+                return redirect(self._uri_of(curr_page[0]))
             elif submit_type == 'prev':
-                prev_page = WizardPageView.PAGES[self._page_index - 1]
+                prev_page = self._my_pages[self._page_index - 1]
                 return redirect(self._uri_of(prev_page[0]))
             elif submit_type == 'next':
                 if (not hasattr(type(self), 'progress_sentry') or
                     self.progress_sentry(self.issues)):
-                    next_page = WizardPageView.PAGES[self._page_index + 1]
+                    next_page = self._my_pages[self._page_index + 1]
                     return redirect(self._uri_of(next_page[0]))
             elif submit_type == 'submit':
                 self.application.submitted = True
-                self.application.save()
-                # TODO: go to a "finished" page
-                return server_error(self.request)
+                if len(self.application.custom_validate()) == 0:
+                    self.application.full_clean()
+                    self.application.save()
+                    return redirect(self._uri_of('submitted'))
+                else:
+                    # drop down into the next section
+                    pass
 
         self.add_issues_to_form()
         self.context = self._generate_base_context()

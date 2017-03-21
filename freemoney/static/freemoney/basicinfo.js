@@ -19,5 +19,11 @@ $(function () {
                            .wrap('<div class="col-md-3"></div>');
     semester_graduating.wrap('<div class="col-md-3"></div>');
     year_graduating.closest('div.form-group').remove();
+
+    $('button[name="submit-type"][value="save"]').prop('disabled', true);
+    $('input, textarea').on('change', function () {
+      $('button[name="submit-type"][value="save"]').prop('disabled', false);
+    });
+    register_close_warning();
   }
 });

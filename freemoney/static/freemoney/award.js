@@ -41,5 +41,10 @@ $(function () {
         }
       })((new Number(i)).toString());
     }
+    $('button[name="submit-type"][value="save"]').prop('disabled', true);
+    $('input[type="checkbox"]').on('change', function () {
+      $('button[name="submit-type"][value="save"]').prop('disabled', false);
+    });
+    register_close_warning();
   }
 });

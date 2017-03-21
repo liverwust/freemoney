@@ -18,3 +18,7 @@
   background-color: #449d44;
   border-color: #398439;
 }
+
+div.submitted {
+  text-align: center;
+}

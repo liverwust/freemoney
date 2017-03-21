@@ -41,13 +41,14 @@ class ApplicationValidationTests(TestCase):
             self.assertEqual(should_be_valid, is_actually_valid)
 
     def test_save_without_finishing(self):
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValidationError) as cm:
             self.application.submitted = True
+            self.application.full_clean()
             self.application.save()
         # this is a sufficiently important check to justify duplicating the
         # exception's message here
-        self.assertEqual(str(cm.exception),
-                         'cannot submit Application with issues!')
+        self.assertIn('cannot submit Application with issues!',
+                      list(cm.exception.error_dict['__all__'][0]))
 
     def test_address(self):
         self.attempt_valid_and_invalid_values('address',

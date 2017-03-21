@@ -38,14 +38,14 @@ class Application(Model):
     additional_remarks = TextField(blank=True)
     submitted = BooleanField(default=False)
 
-    def save(self, *args, **kwargs):
+    def clean(self, *args, **kwargs):
         if self.submitted:
             issues = CustomValidationIssueSet()
             self.custom_validate(issues)
             if len(issues) > 0:
                 # last line of defense; should never have to be raised
-                raise ValueError('cannot submit Application with issues!')
-        super(Application, self).save(*args, **kwargs)
+                raise ValidationError('cannot submit Application with issues!')
+        return super(Application, self).clean(*args, **kwargs)
 
     def _custom_validate_fields(self, issues):
         """Custom validation rules for fields within Application"""

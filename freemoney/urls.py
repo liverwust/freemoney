@@ -1,6 +1,5 @@
 from django.conf.urls import url
 import freemoney.views
-import freemoney.views.dummy   # TODO: remove
 
 app_name = 'freemoney'
 urlpatterns = [
@@ -12,6 +11,6 @@ urlpatterns = [
                             name='basicinfo'),
 #        url(r'^finaid$', freemoney.views.FinancialAidPage.as_view(),
 #                         name='finaid'),
-        url(r'^dummy$', freemoney.views.dummy.DummyPage.as_view(),
-                        name='dummy')   # TODO: remove
+        url(r'^submitted$', freemoney.views.SubmittedPage.as_view(),
+                            name='submitted'),
 ]
