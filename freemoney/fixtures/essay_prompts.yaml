@@ -1,0 +1,89 @@
+- model: freemoney.essayprompt
+  pk: 1
+  fields: {identifier: newmember_involvement_previous, prompt: 'As a recently-initiated
+      member of Triangle, you bring a fresh perspective to the Fraternity. What activities
+      have you participated in prior to becoming a member? This could include work
+      history, research activities, professional societies, publications/awards, mentorship/tutoring,
+      clubs related to engineering, clubs unrelated to major/engineering, community
+      service, etc.', word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 2
+  fields: {identifier: involvement_outside, prompt: 'Part of our responsibility as
+      Triangle members is to apply what we learn here in the "outside world" and,
+      in doing so, to gain a broader perspective. Since joining Triangle, what outside
+      activities have you participated in? This could include work history, research
+      activities, professional societies, publications/awards, mentorship/tutoring,
+      clubs related to engineering, clubs unrelated to major/engineering, community
+      service, etc.', word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 3
+  fields: {identifier: newmember_coe_friends, prompt: 'Ean Hong was always willing
+      to help his friends and fraternity brothers when they needed him. Please share
+      with us some examples from your own life, either before or during your time
+      at Triangle, during which you were able to help a friend in need.', word_limit: 500,
+    previous_version: null}
+- model: freemoney.essayprompt
+  pk: 4
+  fields: {identifier: established_coe_friends, prompt: Ean Hong was always willing
+      to help his friends and fraternity brothers when they needed him. Please share
+      with us some examples from your time at Triangle during which you were able
+      to help a Triangle brother in need., word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 6
+  fields: {identifier: newmember_coe_community_plans, prompt: Ean Hong's generosity
+      extended beyond his immediate circle of friends and Triangle brothers. Please
+      share with us some of your ideas on how to use your experiences from before
+      Triangle to assist with the fraternity's philanthropic and community service
+      goals., word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 7
+  fields: {identifier: newmember_plans_from_others, prompt: 'Triangle brothers are
+      more than friends: we are a coalition organized around the notion of "building
+      better men." You are new to the fraternity, but you no doubt have been exposed
+      to some specifics about how more senior brothers intend to advance that goal.
+      Please share with us, in your own words, a "grand vision" for the Penn State
+      chapter.', word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 8
+  fields: {identifier: established_your_legacy_friendship, prompt: 'Ean Hong was beloved
+      by his friends, family, and fraternity brothers. In our own way, we all leave
+      behind a network of people whose lives were enriched by our presence. When you
+      leave Penn State in the future, how do you think your fraternity brothers will
+      remember you?', word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 9
+  fields: {identifier: established_your_legacy_accomplishments, prompt: 'In addition
+      to the friendships he formed, Ean Hong left behind a legacy of positive changes
+      in the fraternity. When you leave Penn State, what lasting changes will you
+      be able to cite when speaking of your own legacy?', word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 10
+  fields: {identifier: newmember_previous_leadership, prompt: 'As you work and grow
+      alongside your new fraternity brothers, you will be drawing upon your prior
+      achievements and challenges overcome. What leadership opportunities have you
+      had, and how do you think those experiences will benefit you?', word_limit: 500,
+    previous_version: null}
+- model: freemoney.essayprompt
+  pk: 11
+  fields: {identifier: established_community_leadership, prompt: 'A well-rounded Triangle
+      member knows the value of the new perspectives which come from working with
+      people outside of his circle of friends. Please share with us some of your accomplishments
+      from during your time at PSU but outside of Triangle (e.g., professional societies,
+      clubs related or unrelated to your major, community service, work/research activities...).',
+    word_limit: 500, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 12
+  fields: {identifier: newmember_greek_relations_plans, prompt: 'A key responsibility
+      for any Triangle "ambassador" is to connect with the larger Greek community.
+      As a new member, you may not have had many opportunities in this area, but you
+      probably have learned a little about how the community works and how Triangle
+      fits in. Please share some of your ideas for enhancing our fraternity''s involvement
+      in the Greek community, based on what you have learned from other brothers.',
+    word_limit: 750, previous_version: null}
+- model: freemoney.essayprompt
+  pk: 13
+  fields: {identifier: newmember_greek_relations_plans, prompt: 'Although you are
+      a new member, perhaps you have already begun acting as an ambassador between
+      Triangle and the larger Greek community. If you can, please share your accomplishments
+      with us. [note: answering this prompt may garner additional points]', word_limit: 500,
+    previous_version: null}
