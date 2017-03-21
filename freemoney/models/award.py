@@ -78,7 +78,7 @@ class AwardManager(Manager):
                 if selection.identifier in set(['giff_albright', 'joe_conway',
                                                 'ambassador', 'dan_summers',
                                                 'navy_marine', 'excellence',
-                                                'pledge']):
+                                                'pledge', 'ean_hong']):
                     issues.create(section='basicinfo',
                                   field='semester_graduating',
                                   code='prohibited')

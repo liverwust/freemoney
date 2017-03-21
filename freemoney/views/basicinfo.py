@@ -218,7 +218,7 @@ class BasicInfoPage(WizardPageView):
                                    discard=True)) > 0):
             self.form.add_error(
                     'semestertype_graduating',
-                    'semester_graduating: Some of your award selections cannot be granted to graduating seniors (sorry!)'
+                    'semester_graduating: Due to administrative restrictions, awards cannot be granted to graduating seniors (sorry!)'
             )
         if (len(self.issues.search(section='basicinfo',
                                    field='major',

@@ -69,30 +69,15 @@ class AwardApplicationTests(TestCase):
     def test_endowment_senior_limitation(self):
         """Ensure that a graduating senior cannot select endowment awards"""
 
-        ean_hong = Award.objects.latest_version_of('ean_hong')
         excellence = Award.objects.latest_version_of('excellence')
 
         self.application.semester_graduating = Semester('FA16')
-        self.application.award_set.set([ean_hong])
-        issues = CustomValidationIssueSet()
-        self.application.custom_validate(issues)
-        self.assertEqual(list(issues.search(section='basicinfo',
-                                            field='semester_graduating',
-                                            code='prohibited')), [])
-
         self.application.award_set.add(excellence)
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         self.assertNotEqual(list(issues.search(section='basicinfo',
                                                 field='semester_graduating',
                                                 code='prohibited')), [])
-
-        self.application.award_set.remove(excellence)
-        issues = CustomValidationIssueSet()
-        self.application.custom_validate(issues)
-        self.assertEqual(list(issues.search(section='basicinfo',
-                                            field='semester_graduating',
-                                            code='prohibited')), [])
 
     def test_major_restrictions(self):
         """Ensure that only certain majors can apply to restricted awards"""
