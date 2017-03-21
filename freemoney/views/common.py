@@ -94,19 +94,12 @@ class WizardPageView(LoginRequiredMixin, View):
 
         self._my_pages = []
         self._page_index = None
-        needs_finaid_activity = Award.objects.check_app_needs_finaid_activity(
-                self.application
-        )
+        needs_finaid = Award.objects.check_app_needs_finaid(self.application)
         needs_essay = Award.objects.check_app_needs_essay(self.application)
         for index, names in enumerate(WizardPageView.PAGES):
             short_name, long_name = names
-            if not needs_finaid_activity:
-                if short_name == 'finaid' or short_name == 'activity':
-                    if type(self).page_name == short_name:
-                        return redirect(self._uri_of(self._my_pages[-1][0]))
-                    else:
-                        continue
-            if not needs_essay and short_name == 'essay':
+            if ((not needs_finaid and short_name == 'finaid') or
+                (not needs_essay and short_name == 'essay')):
                 if type(self).page_name == short_name:
                     return redirect(self._uri_of(self._my_pages[-1][0]))
                 else:

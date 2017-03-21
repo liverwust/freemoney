@@ -59,14 +59,14 @@ class AwardManager(Manager):
 
         return [self.latest_version_of(slug) for slug in slugs]
 
-    def check_app_needs_finaid_activity(self, application):
-        """True if an application needs finaid and activity pages"""
+    def check_app_needs_finaid(self, application):
+        """True if an application needs financial aid page"""
         checked_awards = set([self.latest_version_of('ean_hong'),
                               self.latest_version_of('ambassador'),
                               self.latest_version_of('giff_albright'),
                               self.latest_version_of('joe_conway'),
                               self.latest_version_of('navy_marine')])
-        for selection in enumerate(application.award_set.iterator()):
+        for selection in application.award_set.iterator():
             if selection in checked_awards:
                 return True
         return False
