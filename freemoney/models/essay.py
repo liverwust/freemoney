@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from django.conf import settings
 from django.db.models import (Manager,
                               Model,
@@ -59,39 +60,90 @@ class EssayManager(Manager):
         else:
             award = Award.objects.latest_version_of(award_or_identifier)
 
-        if award == 'giff_albright':
-            return set([self.latest_version_of('giff_visit_review')])
-        elif award == 'ean_hong':
-            return set([set(['newmember_involvement_previous',
-                             'involvement_outside']),
-                        set(['newmember_coe_friends',
-                             'established_coe_friends',
-                             'newmember_coe_community_plans']),
-                        set(['newmember_plans_from_others',
-                             'established_your_legacy_friendship',
-                             'established_your_legacy_accomplishments'])])
-        elif award == 'ambassador':
-            return set([set(['newmember_involvement_previous',
-                             'involvement_outside']),
-                        set(['newmember_previous_leadership',
-                             'established_community_leadership']),
-                        set(['newmember_greek_relations_plans',
-                             'newmember_greek_relations_accomplishments',
-                             'established_greek_relations_accomplishments'])])
+        if award.identifier == 'giff_albright':
+            prompts = set(['giff_visit_review'])
+        elif award.identifier == 'ean_hong':
+            prompts = set([set(['newmember_involvement_previous',
+                                'involvement_outside']),
+                           set(['newmember_coe_friends',
+                                'established_coe_friends',
+                                'newmember_coe_community_plans']),
+                           set(['newmember_plans_from_others',
+                                'established_your_legacy_friendship',
+                                'established_your_legacy_accomplishments'])])
+        elif award.identifier == 'ambassador':
+            prompts = set([set(['newmember_involvement_previous',
+                                'involvement_outside']),
+                           set(['newmember_previous_leadership',
+                                'established_community_leadership']),
+                           set(['newmember_greek_relations_plans',
+                                'newmember_greek_relations_accomplishments',
+                                'established_greek_relations_accomplishments'])])
+        else:
+            prompts = set()
+
+        real_prompts = set()
+        for identifier_or_subset in prompts:
+            if isinstance(identifier_or_subset, set):
+                subset = set()
+                for identifier in identifier_or_subset:
+                    subset.add(self.latest_version_of(identifier))
+                real_prompts.add(subset)
+            else:
+                real_prompts.add(self.latest_version_of(identifier))
+
+        return real_prompts
 
     def for_application(self, application):
         """Return the full collection of EssayPrompts for a particular app."""
 
+        # TODO: probably should handle a possible KeyError/AttributeError
+        initiated = application.semester_initiated.date
+        initiated = datetime(year=initiated.year,
+                              month=initiated.month,
+                              day=initiated.day,
+                              tzinfo=timezone.utc)
+        present = Semester(application.due_at)
+        present = datetime(year=present.year,
+                              month=present.month,
+                              day=present.day,
+                              tzinfo=timezone.utc)
+        diff = present - initiated
+        # initiated this semester (NIB) or last semester (super-NIB?)
+        if diff < timedelta(months=8):
+            is_new_enough = True
+        else:
+            is_new_enough = False
+
         essays = set()
         for award in application.award_set.iterator():
+            # TODO: implement the always-in-same-group rule as
+            # specified in the for_award docstring; for now, it is
+            # assumed that it is in effect
             for prompt_or_subset in self.for_award(award):
+                subset = None
                 if isinstance(prompt_or_subset, EssayPrompt):
-                    essays.add(prompt_or_subset)
+                    subset = set([prompt_or_subset])
                 else:
-                    # TODO: implement the always-in-same-group rule as
-                    # specified in the for_award docstring; for now, it is
-                    # assumed that it is in effect
-                    essays.add(prompt_or_subet)
+                    subset = prompt_or_subset
+
+                filtered_subset = set()
+                for prompt in subset:
+                    if (is_new_enough and
+                        prompt.identifier.startswith('newmember')):
+                        filtered_subset.add(prompt)
+                    elif (not is_new_enough and
+                          prompt.identifier.startswith('established')):
+                        filtered_subset.add(prompt)
+                    elif (not prompt.identifier.startswith('newmember') and
+                          not prompt.identifier.startswith('established')):
+                        filtered_subset.add(prompt)
+
+                if len(filtered_subset) == 1:
+                    essays.add(list(filtered_subset)[0])
+                elif len(filtered_subset) > 1:
+                    essays.add(filtered_subset)
+
         return essays
 
     def custom_validate_for_application(self, application, issues):

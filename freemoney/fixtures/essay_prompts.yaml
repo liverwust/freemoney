@@ -87,3 +87,7 @@
       Triangle and the larger Greek community. If you can, please share your accomplishments
       with us. [note: answering this prompt may garner additional points]', word_limit: 500,
     previous_version: null}
+- model: freemoney.essayprompt
+  pk: 14
+  fields: {identifier: giff_visit_review, prompt: 'As a condition for the Giff Albright AE award, you should have met with a faculty member (current or emeritus). Please give us an overview what you learned from the faculty member and how you foresee applying that knowledge in the future.', word_limit: 500,
+    previous_version: null}
