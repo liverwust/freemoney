@@ -238,7 +238,7 @@ class WizardPageView(LoginRequiredMixin, View):
                         self.application.save()
                         redirect_to = 'submitted'
                     else:
-                        redirect_to = self._my_pages[self._page_index]
+                        redirect_to = self._my_pages[self._page_index][0]
                     return redirect(self._uri_of(redirect_to))
                 else:
                     add_message(self.request,
