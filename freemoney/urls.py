@@ -9,8 +9,8 @@ urlpatterns = [
                          name='award'),
         url(r'^basicinfo$', freemoney.views.BasicInfoPage.as_view(),
                             name='basicinfo'),
-#        url(r'^finaid$', freemoney.views.FinancialAidPage.as_view(),
-#                         name='finaid'),
+        url(r'^finaid$', freemoney.views.FinancialAidPage.as_view(),
+                         name='finaid'),
         url(r'^submitted$', freemoney.views.SubmittedPage.as_view(),
                             name='submitted'),
 ]

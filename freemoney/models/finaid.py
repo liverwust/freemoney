@@ -1,13 +1,11 @@
-from datetime import date, datetime, timezone
 from django.conf import settings
 from django.db.models import (Model,
                               CASCADE,
-                              DateField,
                               FloatField,
                               ForeignKey,
                               SlugField,
                               TextField)
-from freemoney.models import Semester
+from freemoney.models import Semester, SemesterField
 
 
 class FinancialAid(Model):
@@ -16,7 +14,7 @@ class FinancialAid(Model):
     application = ForeignKey('Application', on_delete=CASCADE)
     aid_type = SlugField(blank=True)
     provider = TextField(blank=True)
-    end_date = DateField(null=True, blank=True)
+    semester_finished = SemesterField(null=True, blank=True)
     installment_frequency = TextField(blank=True)
     installment_amount = FloatField(null=True, blank=True)
 
@@ -37,33 +35,39 @@ class FinancialAid(Model):
     def custom_validate(self, issues):
         """This is "custom" validation as per Application.custom_validate"""
 
-        if (self.aid_type == '' or
-            self.provider == '' or
-            self.installment_frequency == ''):
+        if self.aid_type == '':
             issues.create(section='finaid',
-                          field='[records]',
+                          field='aid_type',
                           subfield=self.pk,
                           code='required')
 
-        issue_invalid_present = False
-
-        if (self.installment_amount < 0.0 or
-            self.installment_amount > 200000.0):
+        if self.provider == '':
             issues.create(section='finaid',
-                          field='[records]',
+                          field='provider',
+                          subfield=self.pk,
+                          code='required')
+
+        if self.installment_frequency == '':
+            issues.create(section='finaid',
+                          field='installment_frequency',
+                          subfield=self.pk,
+                          code='required')
+
+        if self.installment_amount is None:
+            issues.create(section='finaid',
+                          field='installment_amount',
+                          subfield=self.pk,
+                          code='required')
+        elif (self.installment_amount < 0.0 or
+              self.installment_amount > 200000.0):
+            issues.create(section='finaid',
+                          field='installment_amount',
                           subfield=self.pk,
                           code='invalid')
-            issue_invalid_present = True
 
-        if self.end_date is not None:
-            end_semester = Semester(datetime(year=self.end_date.year,
-                                             month=self.end_date.month,
-                                             day=self.end_date.day,
-                                             tzinfo=timezone.utc))
-            if end_semester < Semester(settings.FREEMONEY_DUE_DATE):
-                if not issue_invalid_present:
-                    issues.create(section='finaid',
-                                field='[records]',
-                                subfield=self.pk,
-                                code='invalid')
-                    issue_invalid_present = True
+        if self.semester_finished is not None:
+            if self.semester_finished < Semester(settings.FREEMONEY_DUE_DATE):
+                issues.create(section='finaid',
+                            field='semester_finished',
+                            subfield=self.pk,
+                            code='invalid')

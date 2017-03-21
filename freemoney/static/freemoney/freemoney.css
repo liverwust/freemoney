@@ -1,3 +1,25 @@
+th, td {
+  border-collapse: collapse;
+  border: 1px solid #bbb;
+  padding: 5px;
+  vertical-align: top;
+}
+th.odd, td.odd {
+  background-color: #f0f0f0;
+}
+td.left-combine {
+  border-right: 0px;
+}
+td.right-combine {
+  border-left: 0px;
+}
+td div.form-group {
+  margin-bottom: 0;
+}
+table {
+  margin-bottom: 1.5em;
+}
+
 .btn-selector {
   color: #333;
   background-color: #fff;

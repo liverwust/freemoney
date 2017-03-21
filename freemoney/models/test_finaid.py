@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from freemoney.models import (ApplicantProfile,
@@ -29,7 +30,7 @@ class FinancialAidApplicationTests(TestCase):
                 application=self.application,
                 aid_type='test',
                 provider='',
-                end_date=None,
+                semester_finished=None,
                 installment_frequency='yearly',
                 installment_amount=1.00
         )
@@ -38,7 +39,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         found_issues = issues.search(section='finaid',
-                                     field='[records]',
+                                     field='provider',
                                      code='required')
         self.assertEqual(len(found_issues), 1)
         first_iter = iter(found_issues)
@@ -52,7 +53,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         found_issues = issues.search(section='finaid',
-                                     field='[records]',
+                                     field='installment_frequency',
                                      code='required')
         self.assertEqual(len(found_issues), 1)
         first_iter = iter(found_issues)
@@ -66,7 +67,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         found_issues = issues.search(section='finaid',
-                                     field='[records]',
+                                     field='aid_type',
                                      code='required')
         self.assertEqual(len(found_issues), 1)
         first_iter = iter(found_issues)
@@ -80,12 +81,43 @@ class FinancialAidApplicationTests(TestCase):
         self.application.custom_validate(issues)
         self.assertEqual(len(issues.search(section='finaid')), 0)
 
+    def test_past_finished_date(self):
+        aid = FinancialAid.objects.create(
+                application=self.application,
+                aid_type='test',
+                provider='provider',
+                semester_finished=Semester(('Spring', 2016)),
+                installment_frequency='yearly',
+                installment_amount=1.00
+        )
+
+        # finished in the past (no good)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        found_issues = issues.search(section='finaid',
+                                     field='semester_finished',
+                                     code='invalid')
+        self.assertEqual(len(found_issues), 1)
+        first_iter = iter(found_issues)
+        self.assertNotEqual(next(first_iter).subfield, None)
+
+        # finished in the present (good)
+        aid.semester_finished = Semester(settings.FREEMONEY_DUE_DATE)
+        issues = CustomValidationIssueSet()
+        self.application.custom_validate(issues)
+        found_issues = issues.search(section='finaid',
+                                     field='semester_finished',
+                                     code='invalid')
+        self.assertEqual(len(found_issues), 1)
+        first_iter = iter(found_issues)
+        self.assertNotEqual(next(first_iter).subfield, None)
+
     def test_valid_installments(self):
         aid = FinancialAid.objects.create(
                 application=self.application,
                 aid_type='test',
                 provider='testprovider',
-                end_date=None,
+                semester_finished=None,
                 installment_frequency='yearly',
                 installment_amount=-1.00,
         )
@@ -94,7 +126,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         found_issues = issues.search(section='finaid',
-                                     field='[records]',
+                                     field='installment_amount',
                                      code='invalid')
         self.assertEqual(len(found_issues), 1)
         first_iter = iter(found_issues)
@@ -107,7 +139,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         found_issues = issues.search(section='finaid',
-                                     field='[records]',
+                                     field='installment_amount',
                                      code='invalid')
         self.assertEqual(len(found_issues), 1)
         first_iter = iter(found_issues)
@@ -120,7 +152,7 @@ class FinancialAidApplicationTests(TestCase):
         issues = CustomValidationIssueSet()
         self.application.custom_validate(issues)
         self.assertEqual(len(issues.search(section='finaid',
-                                           field='[records]',
+                                           field='installment_amount',
                                            code='invalid')), 0)
 
     def test_yearly_amount_conversions(self):
@@ -128,7 +160,7 @@ class FinancialAidApplicationTests(TestCase):
                 application=self.application,
                 aid_type='test',
                 provider='testprovider',
-                end_date=None,
+                semester_finished=None,
                 installment_frequency='yearly',
                 installment_amount=500.00
         )

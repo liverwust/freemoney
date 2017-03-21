@@ -54,8 +54,8 @@ class WizardPageView(LoginRequiredMixin, View):
     # (short name, display name)
     PAGES = [('welcome', 'Welcome'),
              ('award',  'Choose Awards'),
-             ('basicinfo', 'Basic Information')]
-#             ('finaid', 'Financial Aid'),
+             ('basicinfo', 'Basic Information'),
+             ('finaid', 'Financial Aid')]
 
     # don't allow PUT, PATCH, DELETE, or TRACE
     http_method_names = ['get', 'post', 'head', 'options']
