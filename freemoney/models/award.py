@@ -53,7 +53,7 @@ class AwardManager(Manager):
         year = semester.date.year
         if semester == Semester(('Spring', year)):
             slugs = ['ean_hong', 'ambassador', 'giff_albright', 'joe_conway',
-                     'dan_summers', 'navy_marine', 'excellence', 'pledge']
+                     'navy_marine', 'excellence', 'pledge']
         elif semester == Semester(('Fall', year)):
             slugs = ['ean_hong', 'excellence', 'pledge']
 
@@ -76,9 +76,9 @@ class AwardManager(Manager):
             elif (application.semester_graduating ==
                   Semester(application.due_at)):
                 if selection.identifier in set(['giff_albright', 'joe_conway',
-                                                'ambassador', 'dan_summers',
-                                                'navy_marine', 'excellence',
-                                                'pledge', 'ean_hong']):
+                                                'ambassador', 'navy_marine',
+                                                'excellence', 'pledge',
+                                                'ean_hong']):
                     issues.create(section='basicinfo',
                                   field='semester_graduating',
                                   code='prohibited')

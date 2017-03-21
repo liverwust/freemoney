@@ -10,61 +10,83 @@ def insert_awards(apps, schema_editor_):
     Award.objects.create(identifier='ean_hong',
                          name='Ean H. C. Hong Memorial Scholarship',
                          description="""
-Honoring Ean Heng Cheung Hong ps94, rewards academics, service, peer feedback.
-Applicants will be required to answer additional essay questions. Two awards
-are available this Spring, each valued at $4,000. Strong preference will be
-given to applicants who have not already received this award. Important note:
-the Ean H. C. Hong Memorial Scholarship is awarded in the semester
-*following*, which means you will need to be an active member during the Fall
-of 2016 to be eligible for this award.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_ean_hong">chapter
+website</a>.</p>
+<p>In memory of Ean Heng Cheung Hong. Rewards academics, service, peer
+feedback. 2x Fall and 2x Spring, &dollar;4,000 per awardee.</p>
+<p>Applicants are graded on an array of criteria.  Strong preference will be
+given to applicants who have not already received this award.</p>
+<p><em>Additional information and essays are required</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='ambassador',
                          name='Ted McLaughlin Triangle Ambassador Award',
                          description="""
-Honoring Ted McLaughlin ps57, rewards academics and involvement in activities.
-Applicants will be required to answer additional essay questions. One award is
-available this Spring, valued at $1,500. Strong preference will be given to
-applicants who have not already received this award. Being a TFAEF award, this
-is unavailable to graduating seniors.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_ted_mclaughlin">chapter
+website</a>.</p>
+<p>Honoring Ted McLaughlin ps57. rewards academics and involvement in
+activities. 1x Spring, &dollar;1,500 per awardee.</p>
+<p>Applicants are graded on an array of criteria.</p>
+<p><em>Additional information and essays are required</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='excellence',
                          name='Triangle Academic Excellence Award',
                          description="""
-Rewards GPA, claimable only once per brother. Reward amount is "tiered" based
-on cumulative GPA ($250 for 3.33-3.66, $500 for 3.67-4.00) -- there is some
-incentive to wait if you believe your grades will improve. No essay questions.
-Individuals who already received this award are not eligible to receive it
-again. Being a TFAEF award, this is unavailable to graduating seniors.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_excellence">chapter
+website</a>.</p>
+<p>Rewards GPA, claimable only once per brother.  If you already claimed it
+once, you cannot receive it again. Reward amount is "tiered" based on
+cumulative GPA (&dollar;250 for 3.33-3.66, &dollar;500 for 3.67-4.00).</p>
+<p><em>No additional information or essays are required</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='pledge',
                          name='Studious Pledge Award',
                          description="""
-Rewards GPA, claimable only by NIBs. If you pledged last semester and earned a
-3.50 GPA cumulative or higher, definitely apply for this award. No essay
-questions. Being a TFAEF award, this is unavailable to graduating seniors.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_pledge">chapter
+website</a>.</p>
+<p>Rewards GPA, claimable only by NIBs. If you pledged last semester and
+earned a 3.50 GPA cumulative or higher, you will automatically win this award,
+which is equivalent to the value of your pledge fee (&dollar;350 as of this
+writing).</p>
+<p><em>No additional information or essays are required</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='navy_marine',
-                         name='Studious Pledge Award',
+                         name='Navy / Marine Corps Service Scholarship',
                          description="""
-Shared amongst all active, reservist, and honorably discharged brothers in the
-US Navy or Marine Corps. If you meet the criteria, apply. No essay questions.
-Individuals may receive this award as often as it is offered. Being a TFAEF
-award, this is unavailable to graduating seniors.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_navy_marine">chapter
+website</a>.</p>
+<p>Award is automatically shared amongst all active, reservist, and honorably
+discharged brothers in the US Navy or Marine Corps. 1x Spring, &dollar;500
+split among winners.</p>
+<p><em>Some additional information is required, but no essays</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='joe_conway',
                          name='Joe Conway Award',
                          description="""
-Special award, shared amongst all Engineering Science and Engineering
-Mechanics majors. If you meet the criteria, apply. No essay questions.
-Individuals may receive this award as often as it is offered. Being a TFAEF
-award, this is unavailable to graduating seniors.
-""".strip().replace('\n', ''))
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_joe_conway">chapter
+website</a>.</p>
+<p>Honoring Dr. Joseph Conway, this award is shared amongst all qualified
+Engineering Science majors and anyone working towards an Engineering Mechanics
+minor. 1x Spring &dollar;500.
+<p><em>Some additional information is required, but no essays</em>.</p>
+""".strip().replace('\n', ' '))
     Award.objects.create(identifier='giff_albright',
                          name='Giff Albright Architectural Engineering Award',
-                         description="""placeholder""")
-    Award.objects.create(identifier='dan_summers',
-                         name='Daniel E. Summers Memorial Scholarship',
-                         description="""placeholder""")
+                         description="""
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_giff_albright">chapter
+website</a>.</p>
+<p>Honoring Giff Albright's continuing achievements, rewards proficient and
+involved Architectural Engineering majors. 1x Spring &dollar;1,000.</p>
+<p>Each applicant is required to meet with a Department of Architectural
+Engineering faculty member (either active or emeritus).</p>
+<p><em>Additional information and essays are required</em>.</p>
+""".strip().replace('\n', ' '))
 
 class Migration(migrations.Migration):
 
