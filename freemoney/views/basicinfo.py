@@ -165,7 +165,7 @@ class BasicInfoPage(WizardPageView):
                         self.form.cleaned_data['semester_gpa']
                 )
             except ValueError:
-                self.application.semester_gpa = ''
+                self.application.semester_gpa = None
 
         if self.form.cleaned_data['cumulative_gpa'] == '':
             self.application.cumulative_gpa = None
@@ -175,7 +175,7 @@ class BasicInfoPage(WizardPageView):
                         self.form.cleaned_data['cumulative_gpa']
                 )
             except ValueError:
-                self.application.cumulative_gpa = ''
+                self.application.cumulative_gpa = None
 
         when_initiated = (self.form.cleaned_data['semestertype_initiated'],
                           self.form.cleaned_data['year_initiated'])
