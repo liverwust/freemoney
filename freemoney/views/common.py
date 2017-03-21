@@ -110,16 +110,28 @@ class WizardPageView(LoginRequiredMixin, View):
         if self._page_index == None:
             raise KeyError('invalid page name: {}'.format(page_name))
 
-        preceding_class = getattr(self, 'prev_page', None)
-        while preceding_class is not None:
-            if not hasattr(preceding_class, 'progress_sentry'):
-                preceding_class = getattr(preceding_class, 'prev_page', None)
-            elif preceding_class.progress_sentry(self.issues):
-                preceding_class = getattr(preceding_class, 'prev_page', None)
+        failing_sentry = self._find_failing_sentry(including_me=False)
+        if failing_sentry is not None:
+            add_message(self.request, ERROR,
+                        'Please complete this section first')
+            return redirect(self._uri_of(failing_sentry.page_name))
+
+    def _find_failing_sentry(self, including_me):
+        if including_me:
+            checked_class = type(self)
+        else:
+            checked_class = getattr(self, 'prev_page', None)
+
+        while checked_class is not None:
+            if not hasattr(checked_class, 'progress_sentry'):
+                checked_class = getattr(checked_class, 'prev_page', None)
+            elif checked_class.progress_sentry(self.issues):
+                checked_class = getattr(checked_class, 'prev_page', None)
             else:
-                add_message(self.request, ERROR,
-                            'Please complete this section first')
-                return redirect(self._uri_of(preceding_class.page_name))
+                return checked_class
+
+        # all sentry checks succeeded
+        return None
 
     def _generate_base_context(self):
         base_context = {
@@ -167,10 +179,8 @@ class WizardPageView(LoginRequiredMixin, View):
 
         self.form = self.prepopulate_form()
 
-        already_added_issues = False
         base_context = self._generate_base_context()
         if len(base_context['errors']) > 0:
-            already_added_issues = True
             self.add_issues_to_form()
 
         self.context = base_context
@@ -196,10 +206,14 @@ class WizardPageView(LoginRequiredMixin, View):
             if self.form is not None:
                 self.save_changes()
 
+            submit_type = request.POST.get('submit-type', default=None)
+
+            if submit_type == 'submit':
+                self.application.submitted = True
+
             self.issues = CustomValidationIssueSet()
             self.application.custom_validate(self.issues)
 
-            submit_type = request.POST.get('submit-type', default=None)
             if submit_type == 'restart':
                 self.application.delete()
                 self.application = Application.objects.create(
@@ -211,37 +225,29 @@ class WizardPageView(LoginRequiredMixin, View):
                 add_message(self.request, INFO,
                             'Application was successfully restarted')
                 return redirect(self._uri_of(self._my_pages[0][0]))
-            elif submit_type == 'save':
-                curr_page = self._my_pages[self._page_index]
-                return redirect(self._uri_of(curr_page[0]))
-            elif submit_type == 'prev':
-                prev_page = self._my_pages[self._page_index - 1]
-                return redirect(self._uri_of(prev_page[0]))
-            elif submit_type == 'next':
-                if (not hasattr(type(self), 'progress_sentry') or
-                    self.progress_sentry(self.issues)):
-                    next_page = self._my_pages[self._page_index + 1]
-                    return redirect(self._uri_of(next_page[0]))
-            elif submit_type == 'submit':
-                self.application.submitted = True
-                if len(self.application.custom_validate()) == 0:
-                    self.application.full_clean()
-                    self.application.save()
-                    return redirect(self._uri_of('submitted'))
+            else:
+                including_me = (submit_type != 'prev')
+                failing_sentry = self._find_failing_sentry(including_me)
+                if failing_sentry is None:
+                    if submit_type == 'prev':
+                        redirect_to = self._my_pages[self._page_index - 1][0]
+                    elif submit_type == 'next':
+                        redirect_to = self._my_pages[self._page_index + 1][0]
+                    elif submit_type == 'submit':
+                        self.application.full_clean()
+                        self.application.save()
+                        redirect_to = 'submitted'
+                    else:
+                        redirect_to = self._my_pages[self._page_index]
+                    return redirect(self._uri_of(redirect_to))
                 else:
-                    # drop down into the next section
-                    pass
-
-        self.add_issues_to_form()
-        self.context = self._generate_base_context()
-        self.context['errors'].append(
-                'Please fix form errors below before proceeding'
-        )
-        self.context['form'] = self.form
-        self.finalize_context()
-        return render(self.request,
-                    self.page_name + '.html',
-                    context=self.context)
+                    add_message(self.request,
+                                ERROR,
+                                'Please fix form errors below before proceeding'
+                    )
+                    return redirect(
+                            self._uri_of(failing_sentry.page_name)
+                    )
 
     def prepopulate_form(self):
         """Return a Form or FormSet using DB data (None for pages w/o form)"""
