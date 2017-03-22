@@ -1,37 +1,54 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>PSU Triangle Scholarship Application</title>
+
+    {% load bootstrap3 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript jquery=1 %}
+    {% load static %}
+
+    <link rel="stylesheet" type="text/css" href="{% static "freemoney/freemoney.css" %}" />
+    <script src="{% static "freemoney/freemoney.js" %}"></script>
+    <script src="{% static "freemoney/award.js" %}"></script>
+    <script src="{% static "freemoney/basicinfo.js" %}"></script>
+    <script src="{% static "freemoney/finaid.js" %}"></script>
+    <script src="{% static "freemoney/essay.js" %}"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
   <body>
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+    <div class="container">
 
-{% if next %}
-    {% if user.is_authenticated %}
-    <p>Your account doesn't have access to this page. To proceed,
-    please login with an account that has access.</p>
-    {% else %}
-    <p>Please login to see this page.</p>
-    {% endif %}
-{% endif %}
+      <h1>Log In</h1>
 
-<form method="post" action="{% url 'login' %}">
-{% csrf_token %}
-<table>
-<tr>
-    <td>{{ form.username.label_tag }}</td>
-    <td>{{ form.username }}</td>
-</tr>
-<tr>
-    <td>{{ form.password.label_tag }}</td>
-    <td>{{ form.password }}</td>
-</tr>
-</table>
+      {% if form.errors %}
+      <p>Your username and password didn't match. Please try again.</p>
+      {% endif %}
 
-<input type="submit" value="login" />
-<input type="hidden" name="next" value="{{ next }}" />
-</form>
+      <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
 
-{# Assumes you setup the password_reset view in your URLconf #}
-<p><a href="{% url 'password_reset' %}">Lost password?</a></p>
+      <p>Please check your <em>psu.edu</em> e-mail for a username and password.</p>
+
+      {% bootstrap_field form.username %}
+      {% bootstrap_field form.password %}
+
+      {% bootstrap_button content="Login" button_type="submit" value="login" %}
+      <input type="hidden" name="next" value="{{ next }}" />
+      </form>
+
+    </div>
+  </body>
 
   </body>
 </html>
