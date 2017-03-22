@@ -1,6 +1,6 @@
 $(function () {
   if ($('input[name="currentstep"][type="hidden"]').val() === "award") {
-    var nr_forms = Number.parseInt($('input[name="form-TOTAL_FORMS"]').val());
+    var nr_forms = parseInt($('input[name="form-TOTAL_FORMS"]').val());
     for (var i = 0; i < nr_forms; i++) {
       (function (i_s) {
         /* Turn the award name into a collapser button */
