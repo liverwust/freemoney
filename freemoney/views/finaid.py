@@ -319,7 +319,8 @@ class FinancialAidForm(Form):
             choices = [('', '- Select -'),
                        ('yearly', 'per year'),
                        ('semesterly', 'per semester'),
-                       ('monthly', 'per month')]
+                       ('monthly', 'per month'),
+                       ('once', 'one time')]
     )
 
     @property
