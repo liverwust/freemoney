@@ -73,6 +73,23 @@
           {% bootstrap_button "Submit" button_type="submit" button_class="btn-success" name="submit-type" value="submit" %}
         {% endif %}
         </div>
+        <div class="modal fade" id="dialog-restart-warn" tabindex="-1" role="dialog">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" data-dismiss="modal" class="close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Really start from scratch?</h4>
+              </div>
+              <div class="modal-body">
+                <p>All of your progress thus far will be <strong>DELETED</strong> if you start over! Are you sure you want to proceed?<p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">No, keep my work</button>
+                <button type="submit" id="restart-for-real" class="btn btn-danger" name="submit-type" value="restart">Yes, delete everything!</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   </body>
