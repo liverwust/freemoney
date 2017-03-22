@@ -20,20 +20,20 @@ class EssayManager(Manager):
     def latest_version_of(self, prompt_or_identifier):
         """Return the latest version of the EssayPrompt (or identifier)"""
 
-        if isinstance(prompt_or_award, EssayPrompt):
-            identifier = prompt_or_award.identifier
+        if isinstance(prompt_or_identifier, EssayPrompt):
+            identifier = prompt_or_identifier.identifier
         else:
-            identifier = prompt_or_award
+            identifier = prompt_or_identifier
 
         # TODO: de-duplicate this code against AwardManager...
         full_set = list(self.filter(identifier=identifier).all())
         tail = None
         for i in range(len(full_set)):
             new_tail = None
-            for award in full_set:
-                if award.previous_version == tail:
+            for prompt in full_set:
+                if prompt.previous_version == tail:
                     if new_tail is None:
-                        new_tail = award
+                        new_tail = prompt
                     else:
                         raise ValueError('branch detected in linked list')
             if new_tail is None:
@@ -61,36 +61,38 @@ class EssayManager(Manager):
             award = Award.objects.latest_version_of(award_or_identifier)
 
         if award.identifier == 'giff_albright':
-            prompts = set(['giff_visit_review'])
+            prompts = ['giff_visit_review']
         elif award.identifier == 'ean_hong':
-            prompts = set([set(['newmember_involvement_previous',
-                                'involvement_outside']),
-                           set(['newmember_coe_friends',
-                                'established_coe_friends',
-                                'newmember_coe_community_plans']),
-                           set(['newmember_plans_from_others',
-                                'established_your_legacy_friendship',
-                                'established_your_legacy_accomplishments'])])
+            prompts = [['newmember_involvement_previous',
+                        'established_involvement_outside'],
+#                       ['newmember_coe_friends',
+#                        'established_coe_friends',
+#                        'newmember_coe_community_plans'],
+                       ['newmember_plans_from_others',
+                        'established_your_legacy_friendship',
+                        'established_your_legacy_accomplishments']]
         elif award.identifier == 'ambassador':
-            prompts = set([set(['newmember_involvement_previous',
-                                'involvement_outside']),
-                           set(['newmember_previous_leadership',
-                                'established_community_leadership']),
-                           set(['newmember_greek_relations_plans',
-                                'newmember_greek_relations_accomplishments',
-                                'established_greek_relations_accomplishments'])])
+            prompts = [['newmember_involvement_previous',
+                        'established_involvement_outside'],
+                       ['newmember_previous_leadership',
+                        'newmember_greek_relations_plans',
+                        'newmember_greek_relations_accomplishments',
+                        'established_community_leadership',
+                        'established_greek_relations_accomplishments']]
         else:
-            prompts = set()
+            prompts = []
 
-        real_prompts = set()
+        real_prompts = []
         for identifier_or_subset in prompts:
-            if isinstance(identifier_or_subset, set):
-                subset = set()
+            if isinstance(identifier_or_subset, list):
+                subset = []
                 for identifier in identifier_or_subset:
-                    subset.add(self.latest_version_of(identifier))
-                real_prompts.add(subset)
+                    subset.append(self.latest_version_of(identifier))
+                real_prompts.append(subset)
             else:
-                real_prompts.add(self.latest_version_of(identifier))
+                real_prompts.append(self.latest_version_of(
+                        identifier_or_subset
+                ))
 
         return real_prompts
 
@@ -98,24 +100,28 @@ class EssayManager(Manager):
         """Return the full collection of EssayPrompts for a particular app."""
 
         # TODO: probably should handle a possible KeyError/AttributeError
-        initiated = application.semester_initiated.date
-        initiated = datetime(year=initiated.year,
-                              month=initiated.month,
-                              day=initiated.day,
-                              tzinfo=timezone.utc)
+        # for now, just assume that the app isn't ready if this isn't ready
+        if application.semester_initiated is None:
+            return []
+
+        initiated = application.semester_initiated
+        initiated = datetime(year=initiated.date.year,
+                             month=initiated.date.month,
+                             day=initiated.date.day,
+                             tzinfo=timezone.utc)
         present = Semester(application.due_at)
-        present = datetime(year=present.year,
-                              month=present.month,
-                              day=present.day,
-                              tzinfo=timezone.utc)
+        present = datetime(year=present.date.year,
+                           month=present.date.month,
+                           day=present.date.day,
+                           tzinfo=timezone.utc)
         diff = present - initiated
         # initiated this semester (NIB) or last semester (super-NIB?)
-        if diff < timedelta(months=8):
+        if diff < timedelta(days=8 * 30):
             is_new_enough = True
         else:
             is_new_enough = False
 
-        essays = set()
+        essays = []
         for award in application.award_set.iterator():
             # TODO: implement the always-in-same-group rule as
             # specified in the for_award docstring; for now, it is
@@ -123,26 +129,41 @@ class EssayManager(Manager):
             for prompt_or_subset in self.for_award(award):
                 subset = None
                 if isinstance(prompt_or_subset, EssayPrompt):
-                    subset = set([prompt_or_subset])
+                    subset = [prompt_or_subset]
                 else:
                     subset = prompt_or_subset
 
-                filtered_subset = set()
+                filtered_subset = []
+                detected = False
                 for prompt in subset:
+                    for inner_prompt_or_subset in essays:
+                        inner_subset = None
+                        if isinstance(inner_prompt_or_subset, EssayPrompt):
+                            inner_subset = [inner_prompt_or_subset]
+                        else:
+                            inner_subset = inner_prompt_or_subset
+                        for inner_prompt in inner_subset:
+                            if inner_prompt == prompt:
+                                detected = True
+                                break
+
+                    if detected:
+                        continue
+
                     if (is_new_enough and
                         prompt.identifier.startswith('newmember')):
-                        filtered_subset.add(prompt)
+                        filtered_subset.append(prompt)
                     elif (not is_new_enough and
                           prompt.identifier.startswith('established')):
-                        filtered_subset.add(prompt)
+                        filtered_subset.append(prompt)
                     elif (not prompt.identifier.startswith('newmember') and
                           not prompt.identifier.startswith('established')):
-                        filtered_subset.add(prompt)
+                        filtered_subset.append(prompt)
 
                 if len(filtered_subset) == 1:
-                    essays.add(list(filtered_subset)[0])
+                    essays.append(filtered_subset[0])
                 elif len(filtered_subset) > 1:
-                    essays.add(filtered_subset)
+                    essays.append(filtered_subset)
 
         return essays
 
@@ -167,22 +188,22 @@ class EssayManager(Manager):
                                   code='required')
             else:
                 subset = prompt_or_subset
-                all_found = True
+                found = False
                 for prompt in subset:
-                    found = False
                     for response in all_responses:
                         if response.prompt == prompt:
                             found = True
                             break
-                    if not found:
-                        all_found = False
+                    if found is True:
                         break
-                if not all_found:
-                    for prompt in subset:
-                        issues.create(section='essay',
-                                      field='[response_groups]',
-                                      subfield=prompt.pk,
-                                      code='required')
+                if not found:
+                    if len(subset) > 0:
+                        first_prompt = subset[0]
+                        for prompt in subset:
+                            issues.create(section='essay',
+                                        field='[response_groups]',
+                                        subfield=first_prompt.pk,
+                                        code='required')
 
 
 class EssayPrompt(Model):
@@ -210,7 +231,7 @@ class Essay(Model):
     def custom_validate(self, issues):
         word_limit_with_grace = int(self.prompt.word_limit * 1.2)
         if len(self.response.split()) > word_limit_with_grace:
-            self.issues.create(section='essay',
-                               field='[responses]',
-                               subfield=self.prompt.pk,
-                               code='max-length')
+            issues.create(section='essay',
+                          field='[responses]',
+                          subfield=self.prompt.pk,
+                          code='max-length')

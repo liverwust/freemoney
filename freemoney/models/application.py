@@ -164,7 +164,8 @@ class Application(Model):
             raise TypeError('need a CustomValidationIssueSet')
 
         self._custom_validate_fields(issues)
-        section_managers = [freemoney.models.Award.objects]
+        section_managers = [freemoney.models.Award.objects,
+                            freemoney.models.EssayPrompt.objects]
         for section_manager in section_managers:
             section_manager.custom_validate_for_application(self, issues)
 

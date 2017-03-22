@@ -11,6 +11,8 @@ urlpatterns = [
                             name='basicinfo'),
         url(r'^finaid$', freemoney.views.FinancialAidPage.as_view(),
                          name='finaid'),
+        url(r'^essay$', freemoney.views.EssayPage.as_view(),
+                        name='essay'),
         url(r'^submitted$', freemoney.views.SubmittedPage.as_view(),
                             name='submitted'),
 ]

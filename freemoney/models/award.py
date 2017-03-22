@@ -76,7 +76,7 @@ class AwardManager(Manager):
         checked_awards = set([self.latest_version_of('ean_hong'),
                               self.latest_version_of('ambassador'),
                               self.latest_version_of('giff_albright')])
-        for selection in enumerate(application.award_set.iterator()):
+        for selection in application.award_set.iterator():
             if selection in checked_awards:
                 return True
         return False
