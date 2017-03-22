@@ -15,7 +15,7 @@ $(function () {
     }
 
     $('button[name="submit-type"][value="save"]').prop('disabled', true);
-    $('input').on('change', function () {
+    $('select, input').on('change', function () {
       $('button[name="submit-type"][value="save"]').prop('disabled', false);
     });
     register_close_warning();
