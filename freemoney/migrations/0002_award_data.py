@@ -87,6 +87,17 @@ involved Architectural Engineering majors. 1x Spring &dollar;1,000.</p>
 Engineering faculty member (either active or emeritus).</p>
 <p><em>Additional information and essays are required</em>.</p>
 """.strip().replace('\n', ' '))
+    Award.objects.create(identifier='daniel_summers',
+                         name='Daniel E. Summers Memorial Scholarship',
+                         description="""
+<p>Complete information on all awards is available on the <a
+href="http://psutriangle.org/information/scholarships/#schp_daniel_summers">chapter
+website</a>.</p>
+<p>Honoring Br. Daniel Summers, rewards loyalty, advocacy, and humility. 1x
+Spring &dollar;500.</p>
+<p>Applicants are graded on an array of criteria, including service to the
+fraternity and bonds of friendship. <em>Additional information and a short essay are required</em>.</p>
+""".strip().replace('\n', ' '))
 
 class Migration(migrations.Migration):
 

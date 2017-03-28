@@ -53,7 +53,7 @@ class AwardManager(Manager):
         year = semester.date.year
         if semester == Semester(('Spring', year)):
             slugs = ['ean_hong', 'ambassador', 'giff_albright', 'joe_conway',
-                     'navy_marine', 'excellence', 'pledge']
+                     'daniel_summers', 'navy_marine', 'excellence', 'pledge']
         elif semester == Semester(('Fall', year)):
             slugs = ['ean_hong', 'excellence', 'pledge']
 

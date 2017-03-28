@@ -39,12 +39,12 @@ before or during your time at Triangle, during which you were able to help a
 friend in need.
 """.strip().replace('\n', ' '))
     EssayPrompt.objects.create(
-            identifier='established_coe_friends',
-            word_limit=500,
+            identifier='dpan_established_coe_friends',
+            word_limit=150,
             prompt="""
-Ean Hong was always willing to help his friends and fraternity brothers when
-they needed him. Please share with us some examples from your time at Triangle
-during which you were able to help a Triangle brother in need.
+Daniel Summers was always willing to help his friends and fraternity brothers
+when they needed him. Please share with us some examples from your time at
+Triangle during which you were able to help a Triangle brother in need.
 """.strip().replace('\n', ' '))
     EssayPrompt.objects.create(
             identifier='newmember_coe_community_plans',

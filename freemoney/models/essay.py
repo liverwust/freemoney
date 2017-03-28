@@ -79,6 +79,8 @@ class EssayManager(Manager):
                         'newmember_greek_relations_accomplishments',
                         'established_community_leadership',
                         'established_greek_relations_accomplishments']]
+        elif award.identifier == 'dan_summers':
+            prompts = ['dpan_established_coe_friends']
         else:
             prompts = []
 
